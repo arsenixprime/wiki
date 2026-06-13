@@ -22,6 +22,9 @@
 
 </div>
 
+> [!NOTE]
+> **This is a fork of [Wiki.js](https://github.com/requarks/wiki) that adds full image clipboard pasting support.** Paste images directly from your clipboard (e.g. screenshots) or drag-and-drop image files into the Markdown and Visual editors — they're automatically uploaded as page assets and inserted at the cursor. Works on Windows, macOS and Linux.
+
 - **[Official Website](https://js.wiki/)**
 - **[Documentation](https://docs.requarks.io/)**
 - [Requirements](https://docs.requarks.io/install/requirements)

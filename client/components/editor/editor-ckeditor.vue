@@ -21,6 +21,7 @@ import DecoupledEditor from '@requarks/ckeditor5'
 // import DecoupledEditor from '../../../../wiki-ckeditor5/build/ckeditor'
 import EditorConflict from './ckeditor/conflict.vue'
 import { html as beautify } from 'js-beautify/js/lib/beautifier.min.js'
+import { makeAssetFilename, uploadAssetImage } from './common/assetUpload'
 
 /* global siteLangs */
 
@@ -90,6 +91,19 @@ export default {
       }
     })
     this.$refs.toolbarContainer.appendChild(this.editor.ui.view.toolbar.element)
+
+    // Upload pasted / dropped images as assets, if the build supports it
+    const fileRepository = _.attempt(() => this.editor.plugins.get('FileRepository'))
+    if (fileRepository && !_.isError(fileRepository)) {
+      fileRepository.createUploadAdapter = loader => ({
+        async upload () {
+          const file = await loader.file
+          const assetPath = await uploadAssetImage(file, makeAssetFilename(file, true))
+          return { default: assetPath }
+        },
+        abort () {}
+      })
+    }
 
     if (this.mode !== 'create') {
       this.editor.setData(this.$store.get('editor/content'))

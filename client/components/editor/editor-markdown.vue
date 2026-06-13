@@ -171,6 +171,7 @@ import { get, sync } from 'vuex-pathify'
 import markdownHelp from './markdown/help.vue'
 import gql from 'graphql-tag'
 import DOMPurify from 'dompurify'
+import { makeAssetFilename, uploadAssetImage } from './common/assetUpload'
 
 /* global siteConfig, siteLangs */
 
@@ -433,21 +434,59 @@ export default {
       this.processContent(newContent)
     }, 600),
     onCmPaste (cm, ev) {
-      // const clipItems = (ev.clipboardData || ev.originalEvent.clipboardData).items
-      // for (let clipItem of clipItems) {
-      //   if (_.startsWith(clipItem.type, 'image/')) {
-      //     const file = clipItem.getAsFile()
-      //     const reader = new FileReader()
-      //     reader.onload = evt => {
-      //       this.$store.commit(`loadingStart`, 'editor-paste-image')
-      //       this.insertAfter({
-      //         content: `![${file.name}](${evt.target.result})`,
-      //         newLine: true
-      //       })
-      //     }
-      //     reader.readAsDataURL(file)
-      //   }
-      // }
+      const clipData = ev.clipboardData || (ev.originalEvent && ev.originalEvent.clipboardData)
+      if (!clipData) { return }
+      // If the clipboard also carries text (e.g. cells copied from a spreadsheet,
+      // which include an image rendering), let the default text paste happen.
+      if (_.includes(clipData.types, 'text/plain') && clipData.getData('text/plain').trim().length > 0) {
+        return
+      }
+      const images = _.compact(Array.from(clipData.items || []).map(item => {
+        return _.startsWith(item.type, 'image/') ? item.getAsFile() : null
+      }))
+      if (images.length < 1) { return }
+      ev.preventDefault()
+      this.uploadAndInsertImages(images, true)
+    },
+    onCmDrop (cm, ev) {
+      const images = Array.from(_.get(ev, 'dataTransfer.files', [])).filter(f => _.startsWith(f.type, 'image/'))
+      if (images.length < 1) { return }
+      ev.preventDefault()
+      cm.setCursor(cm.coordsChar({ left: ev.clientX, top: ev.clientY }, 'window'))
+      this.uploadAndInsertImages(images, false)
+    },
+    /**
+     * Upload image files as assets and insert markdown links at the cursor
+     */
+    async uploadAndInsertImages (files, isPasted) {
+      for (const file of files) {
+        const filename = makeAssetFilename(file, isPasted)
+        const placeholder = `![Uploading ${filename}...]()`
+        this.cm.doc.replaceSelection(placeholder)
+        this.$store.commit(`loadingStart`, 'editor-paste-image')
+        try {
+          const assetPath = await uploadAssetImage(file, filename)
+          this.replaceInDoc(placeholder, `![${filename}](${assetPath})`)
+        } catch (err) {
+          this.replaceInDoc(placeholder, '')
+          this.$store.commit('showNotification', {
+            message: `${this.$t('editor:assets.uploadFailed')} - ${err.message}`,
+            style: 'error',
+            icon: 'alert'
+          })
+        } finally {
+          this.$store.commit(`loadingStop`, 'editor-paste-image')
+        }
+      }
+    },
+    /**
+     * Replace the first occurrence of a string in the document
+     */
+    replaceInDoc (oldText, newText) {
+      const sc = this.cm.getSearchCursor(oldText)
+      if (sc.findNext()) {
+        sc.replace(newText)
+      }
     },
     processContent (newContent) {
       linesMap = []
@@ -813,9 +852,10 @@ export default {
       this.scrollSync(c)
     })
 
-    // Handle special paste
+    // Handle special paste & drop
 
     this.cm.on('paste', this.onCmPaste)
+    this.cm.on('drop', this.onCmDrop)
 
     // Render initial preview
 
