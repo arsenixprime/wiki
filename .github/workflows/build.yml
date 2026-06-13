@@ -15,6 +15,10 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    # Upstream-only pipeline (publishes to the requarks/* namespace and needs
+    # DockerHub / Cypress / prod-environment secrets). Skipped in forks; the
+    # fork's own release flow lives in release-fork.yml.
+    if: github.repository == 'requarks/wiki'
     permissions:
       packages: write
 
