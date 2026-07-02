@@ -208,6 +208,7 @@ export default {
       trail: [],
       diffSource: 0,
       diffTarget: 0,
+      pendingDiff: null,
       offsetPage: 0,
       total: 0,
       viewMode: 'line-by-line',
@@ -265,8 +266,16 @@ export default {
   watch: {
     trail (newValue, oldValue) {
       if (newValue && newValue.length > 0) {
-        this.diffTarget = 0
-        this.diffSource = _.get(_.head(newValue), 'versionId', 0)
+        // Honor a ?diff=from,to deep link (used by workflow notification emails)
+        // once, on first trail load; otherwise default to newest vs live.
+        if (this.pendingDiff) {
+          this.diffSource = this.pendingDiff.from
+          this.diffTarget = this.pendingDiff.to
+          this.pendingDiff = null
+        } else {
+          this.diffTarget = 0
+          this.diffSource = _.get(_.head(newValue), 'versionId', 0)
+        }
       }
     },
     async diffSource (newValue, oldValue) {
@@ -296,6 +305,15 @@ export default {
     this.$store.commit('page/SET_PATH', this.path)
 
     this.$store.commit('page/SET_MODE', 'history')
+
+    // -> Parse ?diff=from,to deep link from workflow notification emails
+    const diffParam = new URLSearchParams(window.location.search).get('diff')
+    if (diffParam) {
+      const [from, to] = diffParam.split(',').map(v => parseInt(v, 10))
+      if (_.isFinite(from) && _.isFinite(to)) {
+        this.pendingDiff = { from, to }
+      }
+    }
 
     this.cache.push({
       action: 'live',

@@ -75,21 +75,24 @@ module.exports = {
       throw new Error('No such locale in local store.')
     }
 
-    // -> Load dev locale files if present
-    if (WIKI.IS_DEBUG) {
-      try {
-        const devEntriesRaw = await fs.readFile(path.join(WIKI.SERVERPATH, `locales/${locale}.yml`), 'utf8')
-        if (devEntriesRaw) {
-          const devEntries = yaml.safeLoad(devEntriesRaw)
-          _.forOwn(devEntries, (data, ns) => {
-            this.namespaces.push(ns)
-            this.engine.addResourceBundle(locale, ns, data, true, true)
-          })
-          WIKI.logger.info(`Loaded dev locales from ${locale}.yml`)
+    // -> Load bundled locale override files if present (server/locales/{code}.yml).
+    //    Loaded unconditionally (not just in dev) so this fork can ship custom
+    //    keys — e.g. the corporate workflow strings — in production images too.
+    //    Merged over the DB strings, so official keys are never clobbered.
+    try {
+      const devEntriesRaw = await fs.readFile(path.join(WIKI.SERVERPATH, `locales/${locale}.yml`), 'utf8')
+      if (devEntriesRaw) {
+        const devEntries = yaml.safeLoad(devEntriesRaw)
+        _.forOwn(devEntries, (data, ns) => {
+          this.namespaces.push(ns)
+          this.engine.addResourceBundle(locale, ns, data, true, true)
+        })
+        if (WIKI.IS_DEBUG) {
+          WIKI.logger.info(`Loaded locale overrides from ${locale}.yml`)
         }
-      } catch (err) {
-        // ignore
       }
+    } catch (err) {
+      // ignore — no override file for this locale
     }
   },
   /**

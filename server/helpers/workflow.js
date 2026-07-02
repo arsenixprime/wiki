@@ -51,7 +51,8 @@ module.exports = {
     return `${this.historyUrl(page)}?diff=${fromVersionId || 0},${toVersionId || 0}`
   },
   draftReviewUrl (page, draftId) {
-    return `${WIKI.config.host}/w/${page.localeCode || page.locale}/${page.path}?draft=${draftId}`
+    // The draft review UI is a modal on the page itself, auto-opened via query.
+    return `${this.pageUrl(page)}?wfdraft=${draftId}`
   },
 
   // ---------------------------------------------------------------------------

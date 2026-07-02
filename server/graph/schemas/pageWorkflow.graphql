@@ -20,6 +20,10 @@ extend type PageQuery {
 
   # Combined per-page workflow metadata for the current user
   workflowState(pageId: Int!): PageWorkflowState @auth(requires: ["read:pages", "manage:pages", "manage:system"])
+
+  # Lightweight group list for the watcher/manager/approver pickers. Read-scoped
+  # (the assignment mutations themselves remain manager/admin only).
+  assignableGroups: [WorkflowGroup] @auth(requires: ["read:pages", "manage:pages", "manage:system"])
 }
 
 extend type PageMutation {
@@ -106,6 +110,11 @@ type PageApprovalStatus {
   approvedCount: Int!
   isComplete: Boolean!
   approvers: [PageApprover]!
+}
+
+type WorkflowGroup {
+  id: Int!
+  name: String!
 }
 
 type PageWorkflowState {

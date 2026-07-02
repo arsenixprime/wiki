@@ -118,6 +118,9 @@ module.exports = {
         isWatching: !!watching,
         canManage: await canManagePage(context.req.user, page)
       }
+    },
+    async assignableGroups (obj, args, context) {
+      return WIKI.models.groups.query().select('id', 'name').orderBy('name')
     }
   },
 
