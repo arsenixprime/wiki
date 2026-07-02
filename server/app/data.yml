@@ -123,6 +123,11 @@ jobs:
     schedule: PT15M
     offlineSkip: false
     repeat: true
+  dispatchWatchNotifications:
+    onInit: false
+    schedule: PT1M
+    offlineSkip: true
+    repeat: true
   syncGraphLocales:
     onInit: true
     schedule: P1D
