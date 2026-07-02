@@ -1,0 +1,118 @@
+# ===============================================
+# CORPORATE DOCUMENTATION WORKFLOW
+# Watch / Managed pages / Review-Approve
+# (extends the Page namespace in page.graphql)
+# ===============================================
+
+extend type PageQuery {
+  # Watch
+  watchers(pageId: Int!): [PageSubject] @auth(requires: ["read:pages", "manage:pages", "manage:system"])
+  isWatching(pageId: Int!): Boolean @auth(requires: ["read:pages", "manage:pages", "manage:system"])
+
+  # Managed pages
+  managers(pageId: Int!): [PageSubject] @auth(requires: ["read:pages", "manage:pages", "manage:system"])
+  drafts(pageId: Int!): [PageDraft] @auth(requires: ["read:pages", "manage:pages", "manage:system"])
+  draft(id: Int!): PageDraft @auth(requires: ["read:pages", "manage:pages", "manage:system"])
+
+  # Review / Approve
+  approvers(pageId: Int!): [PageSubject] @auth(requires: ["read:pages", "manage:pages", "manage:system"])
+  approvalStatus(pageId: Int!): PageApprovalStatus @auth(requires: ["read:pages", "manage:pages", "manage:system"])
+
+  # Combined per-page workflow metadata for the current user
+  workflowState(pageId: Int!): PageWorkflowState @auth(requires: ["read:pages", "manage:pages", "manage:system"])
+}
+
+extend type PageMutation {
+  # --- Watch ---------------------------------------------------------------
+  # Any reader may watch/unwatch themselves.
+  watch(pageId: Int!): DefaultResponse @auth(requires: ["read:pages", "manage:pages", "manage:system"])
+  unwatch(pageId: Int!): DefaultResponse @auth(requires: ["read:pages", "manage:pages", "manage:system"])
+  # Privileged: assign other users/groups (managers + admins only, enforced server-side).
+  setWatchers(pageId: Int!, subjects: [PageSubjectInput!]!): DefaultResponse @auth(requires: ["write:pages", "manage:pages", "manage:system"])
+  setWatchDelay(pageId: Int!, delayMins: Int): DefaultResponse @auth(requires: ["manage:pages", "manage:system"])
+
+  # --- Managed pages -------------------------------------------------------
+  setManaged(pageId: Int!, isManaged: Boolean!): DefaultResponse @auth(requires: ["manage:pages", "manage:system"])
+  setManagers(pageId: Int!, subjects: [PageSubjectInput!]!): DefaultResponse @auth(requires: ["manage:pages", "manage:system"])
+  createDraft(pageId: Int!, content: String, editorKey: String, title: String, description: String): PageDraftResponse @auth(requires: ["read:pages", "manage:pages", "manage:system"])
+  updateDraft(id: Int!, content: String, editorKey: String, title: String, description: String): DefaultResponse @auth(requires: ["read:pages", "manage:pages", "manage:system"])
+  deleteDraft(id: Int!): DefaultResponse @auth(requires: ["read:pages", "manage:pages", "manage:system"])
+  submitDraft(id: Int!): DefaultResponse @auth(requires: ["read:pages", "manage:pages", "manage:system"])
+  publishDraft(id: Int!): DefaultResponse @auth(requires: ["write:pages", "manage:pages", "manage:system"])
+  rejectDraft(id: Int!, comment: String): DefaultResponse @auth(requires: ["write:pages", "manage:pages", "manage:system"])
+
+  # --- Review / Approve ----------------------------------------------------
+  setApprovalMode(pageId: Int!, mode: String!): DefaultResponse @auth(requires: ["manage:pages", "manage:system"])
+  setApprovers(pageId: Int!, subjects: [PageSubjectInput!]!): DefaultResponse @auth(requires: ["manage:pages", "manage:system"])
+  requestApproval(pageId: Int!): DefaultResponse @auth(requires: ["write:pages", "manage:pages", "manage:system"])
+  approve(pageId: Int!): DefaultResponse @auth(requires: ["read:pages", "manage:pages", "manage:system"])
+  requestChanges(pageId: Int!, comment: String): DefaultResponse @auth(requires: ["read:pages", "manage:pages", "manage:system"])
+}
+
+# -----------------------------------------------
+# TYPES
+# -----------------------------------------------
+
+type PageSubject {
+  id: Int
+  kind: String!
+  userId: Int
+  groupId: Int
+  name: String
+  email: String
+}
+
+input PageSubjectInput {
+  userId: Int
+  groupId: Int
+}
+
+type PageDraft {
+  id: Int!
+  pageId: Int!
+  content: String
+  editorKey: String
+  title: String
+  description: String
+  status: String!
+  createdBy: Int
+  createdByName: String
+  updatedBy: Int
+  updatedByName: String
+  submittedBy: Int
+  submittedAt: String
+  createdAt: String
+  updatedAt: String
+}
+
+type PageDraftResponse {
+  responseResult: ResponseStatus
+  draft: PageDraft
+}
+
+type PageApprover {
+  userId: Int!
+  name: String
+  email: String
+  approved: Boolean!
+  approvedVersionId: Int
+  approvedAt: String
+}
+
+type PageApprovalStatus {
+  mode: String!
+  currentRevisionId: Int!
+  total: Int!
+  approvedCount: Int!
+  isComplete: Boolean!
+  approvers: [PageApprover]!
+}
+
+type PageWorkflowState {
+  isManaged: Boolean!
+  approvalMode: String!
+  watchNotifyDelayMins: Int
+  effectiveDelayMins: Int!
+  isWatching: Boolean!
+  canManage: Boolean!
+}
