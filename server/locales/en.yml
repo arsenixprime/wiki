@@ -1,0 +1,75 @@
+# Corporate documentation workflow — English locale overrides
+# (Watch / Managed pages / Review-Approve)
+#
+# Loaded by server/core/localization.js and merged over the DB-sourced official
+# strings. Namespaces are top-level keys; values are nested objects resolved by
+# i18next with the '.' key separator.
+
+common:
+  workflow:
+    title: 'Workflow'
+    watch: 'Watch this page'
+    watching: 'Watching'
+    watchers: 'Watchers'
+    noWatchers: 'No watchers yet.'
+    approved: 'Approved'
+    approvedBanner: 'This page has been approved by all reviewers.'
+    pendingBanner: 'Pending review — {{done}} of {{total}} reviewers have signed off.'
+    # Review / Approve wording variants (the single place the terms diverge in the UI)
+    approve: 'Approve'
+    review: 'Review'
+    approval: 'approval'
+    reviewNoun: 'review'
+    approvedBy: 'Approved by'
+    reviewedBy: 'Reviewed by'
+    lastApproved: 'last approved v{{v}}'
+    requestChanges: 'Request changes'
+    requestReview: 'Request {{noun}}'
+    # Managed pages / drafts
+    managedPage: 'Managed page'
+    newDraft: 'New draft'
+    noDrafts: 'No drafts.'
+    untitledDraft: 'Untitled draft'
+    lastEditedBy: 'edited by {{name}}'
+    editDraft: 'Edit draft'
+    reviewDraft: 'Review draft'
+    submitForReview: 'Submit for review'
+    reject: 'Reject'
+    publish: 'Publish'
+    draftPublished: 'Draft published to the live page.'
+    rejectPrompt: 'Optional comment to send back to the author:'
+    diffHint: 'Comparing the live page (left) with the proposed draft (right).'
+    livePage: 'Live page'
+    draft: 'Draft'
+    content: 'Content'
+    comment: 'Comment'
+    send: 'Send'
+    done: 'Done.'
+    # Pickers
+    noneAssigned: 'None assigned.'
+    addUser: 'Add user'
+    addGroup: 'Add group'
+    allGroupsAdded: 'All groups added'
+
+editor:
+  props:
+    workflow: 'Workflow'
+    workflowUnavailable: 'Save the page first, then reopen properties to configure workflow settings. Workflow configuration requires page-management rights.'
+    managedPage: 'Managed page'
+    managedToggle: 'Only managers may publish directly'
+    managedHint: 'When enabled, other users can only propose changes as drafts that a manager reviews and publishes.'
+    managers: 'Managers (users or groups)'
+    reviewApprove: 'Review / Approve'
+    approvalMode: 'Approval mode'
+    approvalOff: 'Off'
+    approvalReview: 'Review (informal sign-off)'
+    approvalApprove: 'Approve (formal approval badge)'
+    approvers: 'Approvers (users or groups)'
+    watchers: 'Watchers (users or groups)'
+    watchDelay: 'Notification delay (minutes)'
+    watchDelayHint: 'Leave empty to use the site default ({{def}} min). Changes are batched for this long before watchers are emailed.'
+    saveList: 'Save list'
+  managed:
+    banner: 'This page is managed — your changes are saved as a draft for a manager to review and publish.'
+    draftSaved: 'Saved as draft.'
+    draftSubmitted: 'Draft submitted for review.'
