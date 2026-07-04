@@ -1,0 +1,21 @@
+# =====================================
+# MAIL FAILURE STATUS (admin banner)
+# extends the System namespace
+# =====================================
+
+extend type SystemQuery {
+  mailFailure: MailFailureState @auth(requires: ["manage:system"])
+}
+
+extend type SystemMutation {
+  dismissMailFailure: DefaultResponse @auth(requires: ["manage:system"])
+}
+
+type MailFailureState {
+  hasFailures: Boolean!
+  count: Int!
+  firstAt: String
+  lastAt: String
+  lastError: String
+  lastContext: String
+}

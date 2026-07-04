@@ -167,6 +167,19 @@ All fields live under the existing `Query.pages` / `Mutation.pages` namespaces
 existing account emails): `watch-digest`, `draft-submitted`, `draft-rejected`,
 `approval-requested` (first-time + delta copy), `changes-requested`.
 
+### Mail-failure admin alert
+
+Because these workflows depend on email, a failed send must not stay silent.
+`server/core/mail.js#send` records any failure — an SMTP/transport error **or**
+"mail not configured" on an attempted send — into a single `settings` row via
+`server/helpers/mailStatus.js` (aggregated: count, first/last time, last error,
+last template). The admin-gated GraphQL `system.mailFailure` query exposes it and
+`system.dismissMailFailure` clears it. In the client, `nav-header.vue` shows a
+dismissible red banner to any `manage:system` admin, on every page, while an
+unacknowledged failure exists — so an admin logging in is alerted that
+notifications may not be reaching users. (Detects send failures; true bounce /
+delivery tracking would require provider webhooks and is out of scope.)
+
 ## i18n
 
 New user-facing strings live in `server/locales/en.yml` under the `common` and

@@ -2,6 +2,7 @@ const nodemailer = require('nodemailer')
 const _ = require('lodash')
 const fs = require('fs-extra')
 const path = require('path')
+const mailStatus = require('../helpers/mailStatus')
 
 /* global WIKI */
 
@@ -48,24 +49,33 @@ module.exports = {
   async send(opts) {
     if (!this.transport) {
       WIKI.logger.warn('Cannot send email because mail is not setup in the administration area!')
+      // Record so admins are alerted that email could not be sent.
+      await mailStatus.record(new Error('Mail is not configured in the administration area.'), opts.template)
       throw new WIKI.Error.MailNotConfigured()
     }
     await this.loadTemplate(opts.template)
-    return this.transport.sendMail({
-      headers: {
-        'x-mailer': 'Wiki.js'
-      },
-      from: `"${WIKI.config.mail.senderName}" <${WIKI.config.mail.senderEmail}>`,
-      to: opts.to,
-      subject: `${opts.subject} - ${WIKI.config.title}`,
-      text: opts.text,
-      html: _.get(this.templates, opts.template)({
-        logo: (WIKI.config.logoUrl.startsWith('http') ? '' : WIKI.config.host) + WIKI.config.logoUrl,
-        siteTitle: WIKI.config.title,
-        copyright: WIKI.config.company.length > 0 ? WIKI.config.company : 'Powered by Wiki.js',
-        ...opts.data
+    try {
+      return await this.transport.sendMail({
+        headers: {
+          'x-mailer': 'Wiki.js'
+        },
+        from: `"${WIKI.config.mail.senderName}" <${WIKI.config.mail.senderEmail}>`,
+        to: opts.to,
+        subject: `${opts.subject} - ${WIKI.config.title}`,
+        text: opts.text,
+        html: _.get(this.templates, opts.template)({
+          logo: (WIKI.config.logoUrl.startsWith('http') ? '' : WIKI.config.host) + WIKI.config.logoUrl,
+          siteTitle: WIKI.config.title,
+          copyright: WIKI.config.company.length > 0 ? WIKI.config.company : 'Powered by Wiki.js',
+          ...opts.data
+        })
       })
-    })
+    } catch (err) {
+      // Transport/SMTP send failure — record for the admin banner, then rethrow
+      // so existing callers still see the error.
+      await mailStatus.record(err, opts.template)
+      throw err
+    }
   },
   async loadTemplate(key) {
     if (_.has(this.templates, key)) { return }

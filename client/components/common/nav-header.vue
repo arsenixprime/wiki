@@ -1,5 +1,12 @@
 <template lang='pug'>
-  v-app-bar.nav-header(color='black', dark, app, :clipped-left='!$vuetify.rtl', :clipped-right='$vuetify.rtl', fixed, flat, :extended='searchIsShown && $vuetify.breakpoint.smAndDown')
+  v-app-bar.nav-header(color='black', dark, app, :clipped-left='!$vuetify.rtl', :clipped-right='$vuetify.rtl', fixed, flat, :extended='(searchIsShown && $vuetify.breakpoint.smAndDown) || showMailBanner')
+    .nav-mail-alert.red.darken-2.d-flex.align-center.px-4(slot='extension', v-if='showMailBanner', style='width:100%;height:48px;')
+      v-icon.mr-2(small, color='white') mdi-email-alert-outline
+      .body-2.white--text.text-truncate {{ $t('common:mailAlert.banner', { count: mailFailure.count }) }}
+      v-spacer
+      v-btn.mr-1(text, x-small, dark, href='/a/mail') {{ $t('common:mailAlert.settings') }}
+      v-btn(icon, x-small, dark, @click='dismissMailAlert', :aria-label='$t(`common:mailAlert.dismiss`)')
+        v-icon(small) mdi-close
     v-toolbar(color='deep-purple', flat, slot='extension', v-if='searchIsShown && $vuetify.breakpoint.smAndDown')
       v-text-field(
         ref='searchFieldMobile'
@@ -252,6 +259,7 @@
 <script>
 import { get, sync } from 'vuex-pathify'
 import _ from 'lodash'
+import gql from 'graphql-tag'
 
 import movePageMutation from 'gql/common/common-pages-mutation-move.gql'
 
@@ -283,6 +291,7 @@ export default {
       deletePageModal: false,
       locales: siteLangs,
       isDevMode: false,
+      mailFailure: null,
       duplicateOpts: {
         locale: 'en',
         path: 'new-page',
@@ -340,6 +349,12 @@ export default {
     hasAnyPagePermissions () {
       return this.hasAdminPermission || this.hasWritePagesPermission || this.hasManagePagesPermission ||
         this.hasDeletePagesPermission || this.hasReadSourcePermission || this.hasReadHistoryPermission
+    },
+    isSystemAdmin () {
+      return _.includes(this.permissions, 'manage:system')
+    },
+    showMailBanner () {
+      return this.isSystemAdmin && _.get(this.mailFailure, 'hasFailures', false)
     }
   },
   created () {
@@ -481,6 +496,31 @@ export default {
       } else {
         window.location.assign('/')
       }
+    },
+    async dismissMailAlert () {
+      try {
+        await this.$apollo.mutate({
+          mutation: gql`mutation { system { dismissMailFailure { responseResult { succeeded message } } } }`
+        })
+        this.mailFailure = { ...this.mailFailure, hasFailures: false }
+      } catch (err) {
+        this.$store.commit('showNotification', { style: 'red', icon: 'alert', message: err.message })
+      }
+    }
+  },
+  apollo: {
+    mailFailure: {
+      query: gql`
+        query {
+          system {
+            mailFailure { hasFailures count firstAt lastAt lastError lastContext }
+          }
+        }
+      `,
+      fetchPolicy: 'network-only',
+      update: (data) => _.get(data, 'system.mailFailure', null),
+      // Only admins poll this; everyone else never fires the query.
+      skip () { return !this.isAuthenticated || !this.isSystemAdmin }
     }
   }
 }
