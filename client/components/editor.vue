@@ -45,9 +45,9 @@
           span.white--text(v-if='$vuetify.breakpoint.lgAndUp') {{ $t('common:actions.close') }}
         v-divider.ml-3(vertical)
     v-main
-      v-alert.mb-0(v-if='wfManaged && !wfCanManage', color='deep-orange', dark, dense, tile, prominent, icon='mdi-shield-lock-outline')
+      v-alert.mb-0(v-if='draftMode || (wfManaged && !wfCanManage)', :color='draftMode ? `indigo` : `deep-orange`', dark, dense, tile, prominent, :icon='draftMode ? `mdi-file-document-edit-outline` : `mdi-shield-lock-outline`')
         .d-flex.align-center
-          .body-2 {{ $t('editor:managed.banner') }}
+          .body-2 {{ draftMode ? $t('editor:managed.draftBanner') : $t('editor:managed.banner') }}
           v-spacer
           v-btn.ml-3(v-if='wfDraftId', small, color='white', outlined, @click='submitWfDraft') {{ $t('common:workflow.submitForReview') }}
       component(:is='currentEditor', :save='save')
@@ -172,6 +172,7 @@ export default {
       wfManaged: false,
       wfCanManage: false,
       wfDraftId: null,
+      draftMode: false,
       savedState: {
         description: '',
         isPublished: false,
@@ -248,7 +249,17 @@ export default {
 
     this.initContentParsed = this.initContent ? Base64.decode(this.initContent) : ''
     this.$store.set('editor/content', this.initContentParsed)
-    if (this.mode === 'create' && !this.initEditor) {
+
+    // -> Draft mode: /e/<locale>/<path>?draft=<id> edits a managed-page draft in
+    //    the full editor. Load the draft content BEFORE the child editor mounts
+    //    (it reads editor/content on mount) so it renders the draft, not the live
+    //    page. Save is routed to the draft (see save()).
+    const draftId = parseInt(new URLSearchParams(window.location.search).get('draft'), 10)
+    if (Number.isFinite(draftId) && this.pageId > 0) {
+      this.draftMode = true
+      this.wfDraftId = draftId
+      this.loadDraftIntoEditor(draftId)
+    } else if (this.mode === 'create' && !this.initEditor) {
       _.delay(() => {
         this.dialogEditorSelector = true
       }, 500)
@@ -300,6 +311,30 @@ export default {
         this.wfCanManage = _.get(resp, 'data.pages.workflowState.canManage', false)
       } catch (err) { /* non-fatal */ }
     },
+    // Load a draft's content/metadata into the editor store, then mount the
+    // matching editor component (markdown/visual) so it renders the draft.
+    async loadDraftIntoEditor (id) {
+      try {
+        const resp = await this.$apollo.query({
+          query: gql`query ($id: Int!) { pages { draft(id: $id) { id content title description editorKey } } }`,
+          variables: { id },
+          fetchPolicy: 'network-only'
+        })
+        const d = _.get(resp, 'data.pages.draft')
+        if (!d) { throw new Error(this.$t('editor:managed.draftMissing')) }
+        this.$store.set('editor/content', d.content || '')
+        if (d.title) { this.$store.set('page/title', d.title) }
+        if (d.description) { this.$store.set('page/description', d.description) }
+        const ed = d.editorKey || this.initEditor || 'markdown'
+        this.$store.set('editor/editorKey', ed)
+        this.initContentParsed = d.content || ''
+        this.setCurrentSavedState()
+        this.currentEditor = `editor${_.startCase(ed)}`
+      } catch (err) {
+        this.$store.commit('showNotification', { style: 'red', icon: 'alert', message: err.message })
+        this.currentEditor = `editor${_.startCase(this.initEditor || 'markdown')}`
+      }
+    },
     // A non-manager editing a managed page cannot publish directly; their save
     // is transparently routed into a draft they can later submit for review.
     async saveAsDraft () {
@@ -343,8 +378,9 @@ export default {
       }
     },
     async save({ rethrow = false, overwrite = false } = {}) {
-      // Managed page + non-manager -> route into draft mode instead of publishing.
-      if (this.mode !== 'create' && this.wfManaged && !this.wfCanManage) {
+      // Explicit draft editing, OR a non-manager editing a managed page -> save
+      // to the draft instead of publishing to the live page.
+      if (this.draftMode || (this.mode !== 'create' && this.wfManaged && !this.wfCanManage)) {
         return this.saveAsDraft()
       }
       this.showProgressDialog('saving')

@@ -50,10 +50,22 @@
     //- ===================== MANAGED / DRAFTS CARD =====================
     v-card.mb-3.page-workflow-card(flat, v-if='wf.isManaged')
       v-toolbar(:color='$vuetify.theme.dark ? `grey darken-4-d3` : `grey lighten-3`', flat, dense)
-        v-icon.mr-2(small, color='grey') mdi-shield-lock-outline
-        .caption.text-uppercase.grey--text {{ $t('common:workflow.managedPage') }}
+        v-menu(open-on-hover, offset-y, bottom, min-width='220', :close-on-content-click='false')
+          template(v-slot:activator='{ on }')
+            .d-flex.align-center(v-on='on', style='cursor:help;')
+              v-icon.mr-2(small, color='grey') mdi-shield-lock-outline
+              .caption.text-uppercase.grey--text {{ $t('common:workflow.managedPage') }}
+              v-icon.ml-1(x-small, color='grey') mdi-information-outline
+          v-card
+            v-card-text.py-2
+              .caption.grey--text.text--darken-1.mb-1 {{ $t('common:workflow.managedBy') }}
+              .caption.grey--text.font-italic(v-if='managers.length < 1') {{ $t('common:workflow.noManagers') }}
+              div(v-else)
+                v-chip.mr-1.mb-1(v-for='m in managers', :key='m.kind + m.id', x-small, label, :color='m.kind === `group` ? `deep-purple lighten-4` : `blue lighten-4`')
+                  v-icon(x-small, left) {{ m.kind === 'group' ? 'mdi-account-group' : 'mdi-account' }}
+                  | {{ m.name }}
         v-spacer
-        v-btn(small, color='primary', text, @click='openCreateDraft')
+        v-btn(small, color='primary', text, @click='openCreateDraft', :loading='actionLoading')
           v-icon(left, small) mdi-file-document-plus-outline
           | {{ $t('common:workflow.newDraft') }}
       v-card-text.py-2
@@ -69,22 +81,6 @@
               v-btn(icon, small, @click='openReview(d)', :title='$t(`common:workflow.review`)'): v-icon(small) mdi-file-compare
               v-btn(icon, small, @click='openEditDraft(d)', :title='$t(`common:actions.edit`)'): v-icon(small) mdi-pencil
               v-btn(icon, small, @click='deleteDraft(d)', :title='$t(`common:actions.delete`)'): v-icon(small, color='red') mdi-delete-outline
-
-    //- ===================== DRAFT EDIT DIALOG =====================
-    v-dialog(v-model='draftDialog', width='900', persistent)
-      v-card
-        .dialog-header
-          v-icon(color='white') mdi-file-document-edit-outline
-          .subtitle-1.white--text.ml-3 {{ draftEdit.id ? $t('common:workflow.editDraft') : $t('common:workflow.newDraft') }}
-          v-spacer
-        v-card-text.pt-4
-          v-text-field(outlined, dense, :label='$t(`editor:props.title`)', v-model='draftEdit.title')
-          v-text-field(outlined, dense, :label='$t(`editor:props.shortDescription`)', v-model='draftEdit.description')
-          v-textarea(outlined, :label='$t(`common:workflow.content`)', v-model='draftEdit.content', rows='16', style='font-family:monospace;')
-        v-card-actions.px-4.pb-4
-          v-spacer
-          v-btn(text, @click='draftDialog = false') {{ $t('common:actions.cancel') }}
-          v-btn(color='primary', @click='saveDraft', :loading='actionLoading') {{ $t('common:actions.save') }}
 
     //- ===================== REVIEW / DIFF DIALOG =====================
     v-dialog(v-model='reviewDialog', width='1100', scrollable)
@@ -145,14 +141,13 @@ export default {
     return {
       wf: { isManaged: false, approvalMode: 'off', isWatching: false, canManage: false, effectiveDelayMins: 30 },
       watchers: [],
+      managers: [],
       approval: null,
       drafts: [],
       approvers: [],
       pageContent: '',
       watchLoading: false,
       actionLoading: false,
-      draftDialog: false,
-      draftEdit: { id: null, title: '', description: '', content: '' },
       reviewDialog: false,
       reviewDraft: null,
       changesDialog: false,
@@ -178,7 +173,8 @@ export default {
       const patch = createPatch(this.path || 'page', this.pageContent || '', this.reviewDraft.content || '', this.$t('common:workflow.livePage'), this.$t('common:workflow.draft'))
       return Diff2Html.html(patch, { drawFileList: false, matching: 'lines', outputFormat: 'side-by-side' })
     },
-    path: get('page/path')
+    path: get('page/path'),
+    locale: get('page/locale')
   },
   methods: {
     async refetch () {
@@ -210,29 +206,24 @@ export default {
     async openCreateDraft () {
       // Create with null content so the server copies the current live page
       // content/metadata (avoids needing raw-source access on the client), then
-      // open the freshly-created draft for editing.
+      // open the freshly-created draft in the FULL editor (draft mode).
       this.actionLoading = true
       try {
         const resp = await this.$apollo.mutate({
-          mutation: gql`mutation($id: Int!) { pages { createDraft(pageId: $id) { responseResult { succeeded message } draft { id title description content } } } }`,
+          mutation: gql`mutation($id: Int!) { pages { createDraft(pageId: $id) { responseResult { succeeded message } draft { id } } } }`,
           variables: { id: this.pageId }
         })
         const rr = _.get(resp, 'data.pages.createDraft.responseResult', {})
         if (!rr.succeeded) { throw new Error(rr.message) }
         const draft = _.get(resp, 'data.pages.createDraft.draft')
-        await this.refetch()
         this.openEditDraft(draft)
       } catch (err) { this.notifyErr(err) }
       this.actionLoading = false
     },
     openEditDraft (d) {
-      this.draftEdit = { id: d.id, title: d.title, description: d.description, content: d.content }
-      this.draftDialog = true
-    },
-    async saveDraft () {
-      await this.runMutation(gql`mutation($id: Int!, $c: String, $t: String, $d: String) { pages { updateDraft(id: $id, content: $c, title: $t, description: $d) { responseResult { succeeded message } } } }`,
-        { id: this.draftEdit.id, c: this.draftEdit.content, t: this.draftEdit.title, d: this.draftEdit.description }, 'pages.updateDraft')
-      this.draftDialog = false
+      // Open the real editor bound to this draft (full markdown/visual editor,
+      // preview, image paste, properties). Save writes to the draft.
+      window.location.assign(`/e/${this.locale}/${this.path}?draft=${d.id}`)
     },
     async openReview (d) {
       this.reviewDraft = d
@@ -299,6 +290,7 @@ export default {
           pages {
             workflowState(pageId: $id) { isManaged approvalMode watchNotifyDelayMins effectiveDelayMins isWatching canManage }
             watchers(pageId: $id) { id kind userId groupId name }
+            managers(pageId: $id) { id kind userId groupId name }
             approvalStatus(pageId: $id) { mode currentRevisionId total approvedCount isComplete approvers { userId name approved approvedVersionId approvedAt } }
             drafts(pageId: $id) { id pageId content title description status updatedBy updatedByName createdByName submittedAt updatedAt }
           }
@@ -310,6 +302,7 @@ export default {
         const p = data.pages
         this.wf = p.workflowState || this.wf
         this.watchers = p.watchers || []
+        this.managers = p.managers || []
         this.approval = p.approvalStatus || null
         this.drafts = p.drafts || []
         this.$emit('approval', this.approval)

@@ -27,6 +27,8 @@ common:
     requestReview: 'Request {{noun}}'
     # Managed pages / drafts
     managedPage: 'Managed page'
+    managedBy: 'Managed by'
+    noManagers: 'No managers assigned.'
     newDraft: 'New draft'
     noDrafts: 'No drafts.'
     untitledDraft: 'Untitled draft'
@@ -71,5 +73,7 @@ editor:
     saveList: 'Save list'
   managed:
     banner: 'This page is managed — your changes are saved as a draft for a manager to review and publish.'
+    draftBanner: 'You are editing a draft. Save keeps working on the draft; use Submit for review to send it to a manager.'
+    draftMissing: 'Draft not found — it may have been published or deleted.'
     draftSaved: 'Saved as draft.'
     draftSubmitted: 'Draft submitted for review.'
