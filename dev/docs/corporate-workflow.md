@@ -82,17 +82,33 @@ The digest email includes author, timestamp, a compact stats line
   (`manage:pages` / `manage:system`) and its assigned managers. Direct saves by
   anyone else are rejected in `pages.updatePage` (the guard bypasses only for
   `isDraftPublish`).
+- The managed-page panel **shows who the managers are** — hover or click the
+  "Managed page" label to reveal the assigned users/groups.
 - **Drafts** (`pageDrafts`) are full editable copies that never touch the live
-  page or its history until published. **Deliberately, any user with read access
-  may edit or delete any draft** on a page (collaborative by design — see the
-  code comments in `pageWorkflow.js`).
+  page or its history until published. **Deliberately, any user who can author a
+  draft may edit or delete any draft** on the page (collaborative by design — see
+  the code comments in `pageWorkflow.js`).
+- **Drafts are edited in the full page editor**, not a cut-down form. "New draft"
+  / "Edit draft" open the normal editor at `/e/<locale>/<path>?draft=<id>`;
+  `editor.vue` detects the `?draft` param, loads the draft's
+  content/title/description/editorKey into the editor store **before** the child
+  editor mounts (so it renders the draft, not the live page), and routes **Save**
+  to `updateDraft`. The complete markdown/visual editor — live preview, image
+  paste, toolbar, page properties — is available, and **Submit for review** stays
+  in the banner. Drafts remain rows in `pageDrafts` (they are **not** real pages),
+  so they never appear in search, the page tree, navigation, links or the sitemap.
 - A draft can be **submitted** → managers are emailed with a link to a
   side-by-side diff review. Managers **publish** (applies through the normal
   `updatePage` pipeline, recording the submitter as author and the manager as the
   acting publisher, then deletes the draft) or **reject** (returns it to `open`
   with an optional comment emailed to the submitter).
-- The editor proactively routes managed-page non-managers into draft mode
-  (banner + transparent save-as-draft in `editor.vue`).
+- The editor proactively routes managed-page non-managers into draft mode: a
+  normal edit of a managed page transparently becomes a draft (banner +
+  save-as-draft in `editor.vue`).
+- **Draft-authoring access**: because drafts open the real editor (which requires
+  `write:pages`), authoring a draft currently requires page-edit rights rather
+  than read-only access. This narrows the "any reader can draft" intent; a
+  read-only draft-only editor mode is a possible future refinement.
 
 ---
 
