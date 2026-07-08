@@ -751,12 +751,14 @@ export default {
 // inline <svg> DOM (injected via v-html) which prints reliably.
 .print-qr {
   display: none;
-  float: right;
-  margin: 0 0 12px 16px;
+  // Right-aligned via margin, NOT float: a floated element is silently dropped
+  // from the printed output inside the theme's flex/print layout (verified by
+  // rendering the page to PDF). margin-left:auto keeps it in normal flow and it
+  // prints reliably. The SVG carries explicit width/height (set server-side).
+  width: 150px;
+  margin: 0 0 12px auto;
   text-align: center;
 
-  // The SVG carries explicit width/height (set server-side) so it can't
-  // collapse to zero size in print; just make it a block here.
   .print-qr-img svg {
     display: block;
   }
