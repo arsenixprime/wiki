@@ -149,6 +149,33 @@ The digest email includes author, timestamp, a compact stats line
 
 ---
 
+## Site presentation options
+
+Three site-level toggles (**Admin → General → Features**) support controlled /
+corporate deployments. They live in the existing `config.features` block, are
+exposed to the client via `siteConfig`, and are edited through the standard
+`site.updateConfig` mutation.
+
+- **Private site** (`featurePrivateSite`) — hides every social share target in a
+  page's share menu (Facebook, Twitter, LinkedIn, Reddit, Telegram, Viber,
+  Weibo, WhatsApp), leaving only **Copy URL** and **Email**
+  (`client/components/common/social-sharing.vue`).
+- **Hide "Powered by Wiki.js"** (`featureHidePoweredBy`) — removes the
+  attribution (and its separator) from the footer, which also covers the print
+  output (`client/themes/default/components/nav-footer.vue`).
+- **Print QR code** (`featurePrintQRCode`) — when a page is printed, shows a QR
+  code linking to it in the page-title header, next to the page name. The QR is
+  generated server-side with the existing `qr-image` dependency and injected as
+  inline `<svg>` (`server/controllers/common.js` → `page.vue`).
+  - **Print gotcha (documented for future maintainers):** the QR is inline SVG,
+    not a data-URI `<img>` (data-URI images are dropped from printed output), and
+    it is **absolutely positioned, never floated** — a floated element is
+    silently dropped from the printed page inside the theme's flex/print layout.
+    Both were confirmed by rendering the running page to PDF with headless
+    Chrome; that (not on-screen inspection) is the reliable way to debug print.
+
+---
+
 ## GraphQL surface
 
 All fields live under the existing `Query.pages` / `Mutation.pages` namespaces
