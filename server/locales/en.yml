@@ -6,6 +6,9 @@
 # i18next with the '.' key separator.
 
 common:
+  page:
+    qrAlt: 'QR code linking to this page'
+    qrCaption: 'Scan to open this page'
   mailAlert:
     banner: 'Email delivery is failing — {{count}} message(s) could not be sent. Notifications may not be reaching users.'
     settings: 'Mail settings'

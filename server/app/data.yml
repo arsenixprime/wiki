@@ -81,6 +81,9 @@ defaults:
       featurePageRatings: true
       featurePageComments: true
       featurePersonalWikis: true
+      featurePrivateSite: false
+      featureHidePoweredBy: false
+      featurePrintQRCode: false
     security:
       securityOpenRedirect: true
       securityIframe: true

@@ -155,7 +155,10 @@ module.exports = async () => {
       company: WIKI.config.company,
       contentLicense: WIKI.config.contentLicense,
       footerOverride: WIKI.config.footerOverride,
-      logoUrl: WIKI.config.logoUrl
+      logoUrl: WIKI.config.logoUrl,
+      privateSite: _.get(WIKI.config, 'features.featurePrivateSite', false),
+      hidePoweredBy: _.get(WIKI.config, 'features.featureHidePoweredBy', false),
+      printQRCode: _.get(WIKI.config, 'features.featurePrintQRCode', false)
     }
     res.locals.langs = await WIKI.models.locales.getNavLocales({ cache: true })
     res.locals.analyticsCode = await WIKI.models.analytics.getCode({ cache: true })

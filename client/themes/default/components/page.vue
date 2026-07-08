@@ -332,6 +332,9 @@
               .caption {{$t('common:workflow.pendingBanner', { done: wfApproval.approvedCount, total: wfApproval.total })}}
             v-alert.mb-5(v-if='!isPublished', color='red', outlined, icon='mdi-minus-circle', dense)
               .caption {{$t('common:page.unpublishedWarning')}}
+            .print-qr(v-if='printView && qrCode', style='float:right; margin:0 0 12px 16px;')
+              img(:src='qrCode', width='110', height='110', :alt='$t(`common:page.qrAlt`)')
+              .caption.grey--text.text-center {{$t('common:page.qrCaption')}}
             .contents(ref='container')
               slot(name='contents')
             .comments-container#discussion(v-if='commentsEnabled && commentsPerms.read && !printView')
@@ -495,6 +498,10 @@ export default {
       default: ''
     },
     filename: {
+      type: String,
+      default: ''
+    },
+    qrCode: {
       type: String,
       default: ''
     }

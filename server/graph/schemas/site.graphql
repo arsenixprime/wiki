@@ -52,6 +52,9 @@ type SiteMutation {
     featurePageRatings: Boolean
     featurePageComments: Boolean
     featurePersonalWikis: Boolean
+    featurePrivateSite: Boolean
+    featureHidePoweredBy: Boolean
+    featurePrintQRCode: Boolean
     securityOpenRedirect: Boolean
     securityIframe: Boolean
     securityReferrerPolicy: Boolean
@@ -102,6 +105,9 @@ type SiteConfig {
   featurePageRatings: Boolean
   featurePageComments: Boolean
   featurePersonalWikis: Boolean
+  featurePrivateSite: Boolean
+  featureHidePoweredBy: Boolean
+  featurePrintQRCode: Boolean
   securityOpenRedirect: Boolean
   securityIframe: Boolean
   securityReferrerPolicy: Boolean
