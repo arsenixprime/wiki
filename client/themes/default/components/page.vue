@@ -336,9 +336,7 @@
             //- hidden on screen, revealed in Wiki.js print view (printer button)
             //- and in any actual print (Ctrl+P) via @media print. Inline SVG
             //- prints reliably where data-URI images are dropped.
-            .print-qr(v-if='qrCode', :class='{ "print-qr--visible": printView }', role='img', :aria-label='$t(`common:page.qrAlt`)')
-              .print-qr-img(v-html='qrSvgHtml')
-              .caption.grey--text.text-center {{$t('common:page.qrCaption')}}
+            .print-qr(v-if='qrCode', :class='{ "print-qr--visible": printView }', role='img', :aria-label='$t(`common:page.qrAlt`)', v-html='qrSvgHtml')
             .contents(ref='container')
               slot(name='contents')
             .comments-container#discussion(v-if='commentsEnabled && commentsPerms.read && !printView')
@@ -749,27 +747,38 @@ export default {
 // Print QR: hidden on screen; revealed in Wiki.js print view and in any actual
 // print (native Ctrl+P), so it always appears on the printed page. The QR is
 // inline <svg> DOM (injected via v-html) which prints reliably.
+// Small QR tucked into the top-right corner of the printed page.
+// NOTE: it must NOT be floated — a floated element is silently dropped from the
+// printed output inside the theme's flex/print layout (verified by rendering the
+// page to PDF). In print it is absolutely positioned so page content flows at
+// full width beneath it instead of being pushed aside.
 .print-qr {
   display: none;
-  // Right-aligned via margin, NOT float: a floated element is silently dropped
-  // from the printed output inside the theme's flex/print layout (verified by
-  // rendering the page to PDF). margin-left:auto keeps it in normal flow and it
-  // prints reliably. The SVG carries explicit width/height (set server-side).
-  width: 150px;
-  margin: 0 0 12px auto;
-  text-align: center;
 
-  .print-qr-img svg {
+  svg {
     display: block;
+    width: 96px;
+    height: 96px;
   }
 
+  // On-screen "print view" (printer button): small, right-aligned block.
   &--visible {
     display: block;
+    width: 96px;
+    margin-left: auto;
   }
 }
 @media print {
+  .page-col-content {
+    position: relative;
+  }
   .print-qr {
     display: block !important;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 96px;
+    z-index: 10;
   }
 }
 
