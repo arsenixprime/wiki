@@ -752,14 +752,13 @@ export default {
 .print-qr {
   display: none;
   float: right;
-  width: 120px;
   margin: 0 0 12px 16px;
   text-align: center;
 
+  // The SVG carries explicit width/height (set server-side) so it can't
+  // collapse to zero size in print; just make it a block here.
   .print-qr-img svg {
     display: block;
-    width: 100%;
-    height: auto;
   }
 
   &--visible {

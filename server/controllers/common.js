@@ -558,7 +558,11 @@ router.get('/*', async (req, res, next) => {
             try {
               const qrImage = require('qr-image')
               const pageUrl = `${WIKI.config.host}/${page.localeCode}/${page.path}`
+              // qr-image emits <svg viewBox=".."> with NO width/height. An inline
+              // SVG sized only by CSS (%/auto) renders on screen but collapses to
+              // zero height when printed, so inject explicit pixel dimensions.
               const svg = qrImage.imageSync(pageUrl, { type: 'svg', margin: 1 })
+                .replace(/^<svg /, '<svg width="150" height="150" ')
               qrCode = Buffer.from(svg).toString('base64')
             } catch (err) {
               WIKI.logger.warn(`Failed to generate print QR code: ${err.message}`)
