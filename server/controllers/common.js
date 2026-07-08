@@ -548,14 +548,17 @@ router.get('/*', async (req, res, next) => {
           let pageFilename = WIKI.config.lang.namespacing ? `${pageArgs.locale}/${page.path}` : page.path
           pageFilename += page.contentType === 'markdown' ? '.md' : '.html'
 
-          // -> Print QR code (data URI) — links to this page, shown in print view
+          // -> Print QR code (data URI) — links to this page, shown in print view.
+          //    Uses PNG rather than SVG: browsers render an SVG data-URI <img> on
+          //    screen but frequently drop it from the printed output, whereas a
+          //    raster PNG prints reliably.
           let qrCode = ''
           if (_.get(WIKI.config, 'features.featurePrintQRCode', false)) {
             try {
               const qrImage = require('qr-image')
               const pageUrl = `${WIKI.config.host}/${page.localeCode}/${page.path}`
-              const svg = qrImage.imageSync(pageUrl, { type: 'svg', margin: 1 })
-              qrCode = 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64')
+              const png = qrImage.imageSync(pageUrl, { type: 'png', margin: 1, size: 6 })
+              qrCode = 'data:image/png;base64,' + png.toString('base64')
             } catch (err) {
               WIKI.logger.warn(`Failed to generate print QR code: ${err.message}`)
             }
