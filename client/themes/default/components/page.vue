@@ -82,6 +82,8 @@
                 )
                 v-icon.mr-2(small) {{ editShortcutsObj.editMenuExternalIcon }}
                 span.text-none {{$t(`common:page.editExternal`, { name: editShortcutsObj.editMenuExternalName })}}
+            //- Print QR: sits in the page-title header (right side), print only.
+            .print-qr(v-if='qrCode', :class='{ "print-qr--visible": printView }', role='img', :aria-label='$t(`common:page.qrAlt`)', v-html='qrSvgHtml')
       v-divider
       v-container.pl-5.pt-4(fluid, grid-list-xl)
         v-layout(row)
@@ -332,11 +334,6 @@
               .caption {{$t('common:workflow.pendingBanner', { done: wfApproval.approvedCount, total: wfApproval.total })}}
             v-alert.mb-5(v-if='!isPublished', color='red', outlined, icon='mdi-minus-circle', dense)
               .caption {{$t('common:page.unpublishedWarning')}}
-            //- Inline SVG QR (not an <img>): always in the DOM when enabled,
-            //- hidden on screen, revealed in Wiki.js print view (printer button)
-            //- and in any actual print (Ctrl+P) via @media print. Inline SVG
-            //- prints reliably where data-URI images are dropped.
-            .print-qr(v-if='qrCode', :class='{ "print-qr--visible": printView }', role='img', :aria-label='$t(`common:page.qrAlt`)', v-html='qrSvgHtml')
             .contents(ref='container')
               slot(name='contents')
             .comments-container#discussion(v-if='commentsEnabled && commentsPerms.read && !printView')
@@ -744,41 +741,35 @@ export default {
 </script>
 
 <style lang="scss">
-// Print QR: hidden on screen; revealed in Wiki.js print view and in any actual
-// print (native Ctrl+P), so it always appears on the printed page. The QR is
-// inline <svg> DOM (injected via v-html) which prints reliably.
-// Small QR tucked into the top-right corner of the printed page.
-// NOTE: it must NOT be floated — a floated element is silently dropped from the
-// printed output inside the theme's flex/print layout (verified by rendering the
-// page to PDF). In print it is absolutely positioned so page content flows at
-// full width beneath it instead of being pushed aside.
+// Print QR: sits inside the page-title header, on the right, vertically centered
+// next to the page name. Print only (revealed by the printer button on-screen
+// and by @media print for any actual print). Inline <svg> DOM injected via
+// v-html — must NOT be floated (a float is silently dropped from the printed
+// output inside the theme's flex/print layout; verified by rendering to PDF).
+.is-page-header {
+  position: relative;
+}
 .print-qr {
   display: none;
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  z-index: 10;
 
   svg {
     display: block;
-    width: 96px;
-    height: 96px;
+    width: 74px;
+    height: 74px;
   }
 
-  // On-screen "print view" (printer button): small, right-aligned block.
   &--visible {
     display: block;
-    width: 96px;
-    margin-left: auto;
   }
 }
 @media print {
-  .page-col-content {
-    position: relative;
-  }
   .print-qr {
     display: block !important;
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 96px;
-    z-index: 10;
   }
 }
 
