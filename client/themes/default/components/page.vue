@@ -332,10 +332,12 @@
               .caption {{$t('common:workflow.pendingBanner', { done: wfApproval.approvedCount, total: wfApproval.total })}}
             v-alert.mb-5(v-if='!isPublished', color='red', outlined, icon='mdi-minus-circle', dense)
               .caption {{$t('common:page.unpublishedWarning')}}
-            //- Always in the DOM when enabled, but only visible in Wiki.js print
-            //- view (printer button) OR any actual print (Ctrl+P) via @media print.
-            .print-qr(v-if='qrCode', :class='{ "print-qr--visible": printView }')
-              img(:src='qrCode', width='110', height='110', :alt='$t(`common:page.qrAlt`)')
+            //- Inline SVG QR (not an <img>): always in the DOM when enabled,
+            //- hidden on screen, revealed in Wiki.js print view (printer button)
+            //- and in any actual print (Ctrl+P) via @media print. Inline SVG
+            //- prints reliably where data-URI images are dropped.
+            .print-qr(v-if='qrCode', :class='{ "print-qr--visible": printView }', role='img', :aria-label='$t(`common:page.qrAlt`)')
+              .print-qr-img(v-html='qrSvgHtml')
               .caption.grey--text.text-center {{$t('common:page.qrCaption')}}
             .contents(ref='container')
               slot(name='contents')
@@ -566,6 +568,14 @@ export default {
         }, []))
     },
     pageUrl () { return window.location.href },
+    qrSvgHtml () {
+      if (!this.qrCode) { return '' }
+      try {
+        return Buffer.from(this.qrCode, 'base64').toString('utf8')
+      } catch (err) {
+        return ''
+      }
+    },
     upBtnPosition () {
       if (this.$vuetify.breakpoint.mdAndUp) {
         return this.$vuetify.rtl ? `right: 235px;` : `left: 235px;`
@@ -737,27 +747,28 @@ export default {
 
 <style lang="scss">
 // Print QR: hidden on screen; revealed in Wiki.js print view and in any actual
-// print (native Ctrl+P), so it always appears on the printed page.
+// print (native Ctrl+P), so it always appears on the printed page. The QR is
+// inline <svg> DOM (injected via v-html) which prints reliably.
 .print-qr {
   display: none;
+  float: right;
+  width: 120px;
+  margin: 0 0 12px 16px;
+  text-align: center;
+
+  .print-qr-img svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
 
   &--visible {
     display: block;
-    float: right;
-    margin: 0 0 12px 16px;
-    text-align: center;
   }
 }
 @media print {
   .print-qr {
     display: block !important;
-    float: right;
-    margin: 0 0 12px 16px;
-    text-align: center;
-
-    img {
-      display: block;
-    }
   }
 }
 
