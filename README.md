@@ -22,8 +22,26 @@
 
 </div>
 
-> [!NOTE]
-> **This is a fork of [Wiki.js](https://github.com/requarks/wiki) that adds full image clipboard pasting support.** Paste images directly from your clipboard (e.g. screenshots) or drag-and-drop image files into the Markdown and Visual editors — they're automatically uploaded as page assets and inserted at the cursor. Works on Windows, macOS and Linux.
+> [!IMPORTANT]
+> ## An opinionated fork of Wiki.js
+>
+> This is a fork of [Wiki.js](https://github.com/requarks/wiki) **2.x** tuned for **controlled, corporate documentation**. It tracks upstream Wiki.js and layers on the features below. Everything is opt-in through the normal admin UI — upstream behaviour is unchanged unless you enable it.
+>
+> **Editing**
+> - **Clipboard image paste & drag-and-drop** — paste screenshots or drop image files straight into the Markdown and Visual editors; they upload as page assets and are inserted at the cursor. Works on Windows, macOS and Linux.
+>
+> **Publishing workflow** (see [`dev/docs/corporate-workflow.md`](dev/docs/corporate-workflow.md))
+> - **Watch** — subscribe to a page and receive a debounced, consolidated email digest when its published content changes.
+> - **Managed pages** — restrict direct publishing to designated managers; everyone else proposes changes as **drafts** (edited in the full editor) that a manager reviews as a diff and publishes or rejects.
+> - **Review / Approve** — per-revision sign-off by designated approvers, with a prominent **Approved** badge when a page is fully approved.
+> - **Groups everywhere** — watchers, managers and approvers can be individual users *or* whole groups, resolved to live membership at evaluation time.
+>
+> **Administration & presentation**
+> - **Mail-failure alert** — admins get a dismissible banner when notification email fails to send.
+> - **Private site** — hide social share buttons in the share menu (keep only Copy URL and Email).
+> - **Hide "Powered by Wiki.js"** — remove the attribution from the footer and print output.
+> - **Print QR code** — print pages with a QR code linking back to the live page.
+> - **Customizable load/save animation** — choose the spinner style (20 presets), colour and speed.
 
 - **[Official Website](https://js.wiki/)**
 - **[Documentation](https://docs.requarks.io/)**

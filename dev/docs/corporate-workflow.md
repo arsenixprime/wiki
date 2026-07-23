@@ -174,6 +174,17 @@ exposed to the client via `siteConfig`, and are edited through the standard
     Both were confirmed by rendering the running page to PDF with headless
     Chrome; that (not on-screen inspection) is the reliable way to debug print.
 
+### Load / save animation (Admin → Theme)
+
+The spinner shown while pages **load** (header indicator) and **save** (editor
+progress dialog) is customizable: one of 20 bundled `epic-spinners` presets,
+plus colour and speed, with a live preview in the admin UI. Stored in the
+`theming` config (`loadingAnimation` / `loadingColor` / `loadingSpeed`), surfaced
+via `siteConfig`. A shared `client/components/common/spinners.js` registry maps
+preset keys to components, consumed by `loader.vue`, `nav-header.vue` and the
+admin preview via `<component :is>`. The save dialog uses a neutral card so the
+chosen colour reads well; the success (icon) dialog keeps its coloured card.
+
 ---
 
 ## GraphQL surface

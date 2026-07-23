@@ -1,17 +1,19 @@
 <template lang='pug'>
   v-dialog(v-model='value', persistent, max-width='350', :overlay-color='color', overlay-opacity='.7')
-    v-card.loader-dialog.radius-7(:color='color', dark)
+    v-card.loader-dialog.radius-7(:color='cardColor', :dark='cardDark')
       v-card-text.text-center.py-4
+        //- Loading mode: themed spinner (color from Admin -> Theme) on a neutral card.
         component.is-inline(
           v-if='mode === `loading`'
           :is='spinnerComponent'
           :animation-duration='spinnerSpeed'
           :size='60'
-          color='#FFF'
+          :color='loadingColor'
           )
+        //- Icon mode (e.g. success checkmark): keep the coloured card + white icon.
         img(v-else-if='mode === `icon`', :src='`/_assets/svg/icon-` + icon + `.svg`', :alt='icon')
-        .subtitle-1.white--text {{ title }}
-        .caption {{ subtitle }}
+        .subtitle-1(:class='cardDark ? `white--text` : `grey--text text--darken-3`') {{ title }}
+        .caption(:class='cardDark ? `grey--text text--lighten-2` : `grey--text text--darken-1`') {{ subtitle }}
 </template>
 
 <script>
@@ -47,12 +49,22 @@ export default {
   },
   computed: {
     loadingAnimation: get('site/loadingAnimation'),
+    loadingColor: get('site/loadingColor'),
     loadingSpeed: get('site/loadingSpeed'),
     spinnerComponent () {
       return resolveSpinner(this.loadingAnimation)
     },
     spinnerSpeed () {
       return this.loadingSpeed || 1000
+    },
+    // Loading mode uses a neutral card so the custom spinner colour reads well;
+    // icon mode keeps the caller's coloured card (white icon/text).
+    cardColor () {
+      if (this.mode !== 'loading') { return this.color }
+      return this.$vuetify.theme.dark ? 'grey darken-3' : 'white'
+    },
+    cardDark () {
+      return this.mode !== 'loading' || this.$vuetify.theme.dark
     }
   }
 }
@@ -62,11 +74,8 @@ export default {
   .loader-dialog {
     transition: all .4s ease;
 
-    .atom-spinner.is-inline {
+    .is-inline {
       display: inline-block;
-    }
-    .caption {
-      color: rgba(255,255,255,.7);
     }
 
     img {
