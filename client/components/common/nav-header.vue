@@ -85,8 +85,8 @@
       v-flex(xs7, md4)
         v-toolbar.nav-header-inner.pr-4(color='black', dark, flat)
           v-spacer
-          .navHeaderLoading.mr-3
-            v-progress-circular(indeterminate, color='blue', :size='22', :width='2' v-show='isLoading')
+          .navHeaderLoading.mr-3(v-show='isLoading')
+            component(:is='spinnerComponent', :size='22', :animation-duration='spinnerSpeed', :color='loadingColor')
 
           slot(name='actions')
 
@@ -260,6 +260,7 @@
 import { get, sync } from 'vuex-pathify'
 import _ from 'lodash'
 import gql from 'graphql-tag'
+import { resolveSpinner } from './spinners'
 
 import movePageMutation from 'gql/common/common-pages-mutation-move.gql'
 
@@ -355,6 +356,15 @@ export default {
     },
     showMailBanner () {
       return this.isSystemAdmin && _.get(this.mailFailure, 'hasFailures', false)
+    },
+    loadingAnimation: get('site/loadingAnimation'),
+    loadingColor: get('site/loadingColor'),
+    loadingSpeed: get('site/loadingSpeed'),
+    spinnerComponent () {
+      return resolveSpinner(this.loadingAnimation)
+    },
+    spinnerSpeed () {
+      return this.loadingSpeed || 1000
     }
   },
   created () {

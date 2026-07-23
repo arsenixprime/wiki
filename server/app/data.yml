@@ -61,6 +61,9 @@ defaults:
       iconset: 'md'
       darkMode: false
       tocPosition: 'left'
+      loadingAnimation: 'atom'
+      loadingColor: '#1976d2'
+      loadingSpeed: 1000
     auth:
       autoLogin: false
       enforce2FA: false

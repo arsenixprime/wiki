@@ -2,9 +2,10 @@
   v-dialog(v-model='value', persistent, max-width='350', :overlay-color='color', overlay-opacity='.7')
     v-card.loader-dialog.radius-7(:color='color', dark)
       v-card-text.text-center.py-4
-        atom-spinner.is-inline(
+        component.is-inline(
           v-if='mode === `loading`'
-          :animation-duration='1000'
+          :is='spinnerComponent'
+          :animation-duration='spinnerSpeed'
           :size='60'
           color='#FFF'
           )
@@ -14,12 +15,10 @@
 </template>
 
 <script>
-import { AtomSpinner } from 'epic-spinners'
+import { get } from 'vuex-pathify'
+import { resolveSpinner } from './spinners'
 
 export default {
-  components: {
-    AtomSpinner
-  },
   props: {
     value: {
       type: Boolean,
@@ -44,6 +43,16 @@ export default {
     icon: {
       type: String,
       default: 'checkmark'
+    }
+  },
+  computed: {
+    loadingAnimation: get('site/loadingAnimation'),
+    loadingSpeed: get('site/loadingSpeed'),
+    spinnerComponent () {
+      return resolveSpinner(this.loadingAnimation)
+    },
+    spinnerSpeed () {
+      return this.loadingSpeed || 1000
     }
   }
 }
