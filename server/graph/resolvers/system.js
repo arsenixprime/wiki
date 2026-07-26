@@ -9,6 +9,7 @@ const graphHelper = require('../../helpers/graph')
 const request = require('request-promise')
 const crypto = require('crypto')
 const nanoid = require('nanoid/non-secure').customAlphabet('1234567890abcdef', 10)
+const getGitVersion = require('../../helpers/gitVersion')
 
 const getosAsync = require('util').promisify(getos)
 
@@ -347,6 +348,15 @@ module.exports = {
       } else {
         return WIKI.config.db.host
       }
+    },
+    async gitBranch () {
+      return (await getGitVersion()).branch
+    },
+    async gitCommit () {
+      return (await getGitVersion()).commitShort
+    },
+    async gitCommitDate () {
+      return (await getGitVersion()).commitDate
     },
     hostname () {
       return os.hostname()

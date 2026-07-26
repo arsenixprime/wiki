@@ -44,6 +44,17 @@ COPY --chown=node:node ./dev/build/config.yml ./config.yml
 COPY --chown=node:node ./package.json ./package.json
 COPY --chown=node:node ./LICENSE ./LICENSE
 
+# Bake git build info (branch/commit/date) so it can be shown in Admin →
+# System Info. The .git folder isn't present in the image, so the release
+# workflow passes these as build args. Left empty for a plain `docker build`.
+ARG GIT_BRANCH=""
+ARG GIT_COMMIT=""
+ARG GIT_COMMIT_DATE=""
+RUN if [ -n "$GIT_COMMIT" ] || [ -n "$GIT_BRANCH" ]; then \
+      printf '{"branch":"%s","commit":"%s","commitDate":"%s"}' "$GIT_BRANCH" "$GIT_COMMIT" "$GIT_COMMIT_DATE" > /wiki/git-version.json && \
+      chown node:node /wiki/git-version.json ; \
+    fi
+
 USER node
 
 VOLUME ["/wiki/data/content"]

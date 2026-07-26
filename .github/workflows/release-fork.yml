@@ -43,6 +43,10 @@ jobs:
           echo "REL_VERSION_STRICT=${REF#v}" >> $GITHUB_ENV
           echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
           echo "Building $REF -> ghcr.io/${GITHUB_REPOSITORY,,}:${REF#v}"
+          # -> Git build info, baked into the image (shown in Admin → System Info)
+          echo "GIT_BRANCH=$GITHUB_REF_NAME" >> $GITHUB_ENV
+          echo "GIT_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "GIT_COMMIT_DATE=$(git show -s --format=%cI HEAD)" >> $GITHUB_ENV
 
       - name: Disable DEV Flag + Set Version
         run: |
@@ -70,6 +74,10 @@ jobs:
           context: .
           file: dev/build/Dockerfile
           push: true
+          build-args: |
+            GIT_BRANCH=${{ env.GIT_BRANCH }}
+            GIT_COMMIT=${{ env.GIT_COMMIT }}
+            GIT_COMMIT_DATE=${{ env.GIT_COMMIT_DATE }}
           tags: |
             ${{ env.IMAGE }}:${{ env.REL_VERSION_STRICT }}
             ${{ env.IMAGE }}:latest

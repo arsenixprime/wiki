@@ -19,6 +19,14 @@
                   v-list-item-content
                     v-list-item-title {{ $t('admin:system.currentVersion') }}
                     v-list-item-subtitle {{ info.currentVersion }}
+                v-list-item(v-if='gitVersion')
+                  v-list-item-avatar
+                    v-icon.blue.white--text mdi-source-branch
+                  v-list-item-content
+                    v-list-item-title Git Build
+                    v-list-item-subtitle {{ gitVersion }}
+                  v-list-item-action(v-if='info.gitCommitDate')
+                    v-list-item-action-text {{ info.gitCommitDate | moment('from') }}
                 v-list-item
                   v-list-item-avatar
                     v-icon.blue.white--text mdi-inbox-arrow-up
@@ -152,6 +160,12 @@ export default {
   computed: {
     dbVersion () {
       return _.get(this.info, 'dbVersion', '').replace(/(?:\r\n|\r|\n)/g, '<br />')
+    },
+    gitVersion () {
+      const branch = _.get(this.info, 'gitBranch', null)
+      const commit = _.get(this.info, 'gitCommit', null)
+      if (branch && commit) { return `${branch} @ ${commit}` }
+      return branch || commit || ''
     },
     platformLogo () {
       switch (this.info.platform) {
