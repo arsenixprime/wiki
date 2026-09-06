@@ -42,6 +42,7 @@
 > - **Hide "Powered by Wiki.js"** — remove the attribution from the footer and print output.
 > - **Print QR code** — print pages with a QR code linking back to the live page.
 > - **Customizable load/save animation** — choose the spinner style (20 presets), colour and speed.
+> - **Git build info** — Admin → System Info shows the running branch / commit / date, so you always know exactly what version is deployed.
 
 - **[Official Website](https://js.wiki/)**
 - **[Documentation](https://docs.requarks.io/)**

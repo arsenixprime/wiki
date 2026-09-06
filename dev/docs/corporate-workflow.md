@@ -174,6 +174,18 @@ exposed to the client via `siteConfig`, and are edited through the standard
     Both were confirmed by rendering the running page to PDF with headless
     Chrome; that (not on-screen inspection) is the reliable way to debug print.
 
+### Git build info (Admin → System Info)
+
+A **Git Build** row in Admin → System Info shows the running build's branch,
+short commit and commit date, so it's easy to tell exactly what version is
+deployed. `server/helpers/gitVersion.js` resolves it with a fallback chain that
+works in every deployment shape: `GIT_BRANCH` / `GIT_COMMIT` / `GIT_COMMIT_DATE`
+env vars → a build-stamped `git-version.json` → a live `.git` read via
+`simple-git` → nulls (the row hides). The release workflow passes the values as
+Docker build args and the Dockerfile writes `git-version.json` into the image,
+so the built image reports the real branch/commit even though `.git` is absent.
+Surfaced as `SystemInfo.gitBranch` / `gitCommit` / `gitCommitDate` (admin-gated).
+
 ### Load / save animation (Admin → Theme)
 
 The spinner shown while pages **load** (header indicator) and **save** (editor
