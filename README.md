@@ -22,8 +22,43 @@
 
 </div>
 
-> [!NOTE]
-> **This is a fork of [Wiki.js](https://github.com/requarks/wiki) that adds full image clipboard pasting support.** Paste images directly from your clipboard (e.g. screenshots) or drag-and-drop image files into the Markdown and Visual editors — they're automatically uploaded as page assets and inserted at the cursor. Works on Windows, macOS and Linux.
+<!-- ========================================================================
+     FORK NOTICE
+     ======================================================================== -->
+
+> [!IMPORTANT]
+> **This repository is an opinionated fork of [Wiki.js](https://github.com/requarks/wiki) 2.x**, tuned for **controlled, corporate documentation**. It tracks upstream Wiki.js and layers the additions below on top. Every addition is **opt-in through the normal admin UI** — stock Wiki.js behaviour is unchanged unless you turn it on. The features are outlined below; see [`dev/docs/corporate-workflow.md`](dev/docs/corporate-workflow.md) for the technical deep dive.
+
+## ✨ What this fork adds (vs. upstream Wiki.js)
+
+### ✍️ Editing
+
+- **Clipboard image paste & drag-and-drop** — paste screenshots straight from the clipboard, or drop image files, into the Markdown *and* Visual editors. They upload as page assets and are inserted at the cursor. Works on Windows, macOS and Linux — the feature stock Wiki.js famously lacks.
+
+### 🔒 Controlled publishing workflow
+
+A full review/approval pipeline that turns Wiki.js into a governed documentation system. (Details in [`dev/docs/corporate-workflow.md`](dev/docs/corporate-workflow.md).)
+
+- **Watch** — subscribe to a page (yourself, or assign others/groups) and receive a **debounced, consolidated email digest** when its published content changes, with a change summary and a link to the diff.
+- **Managed pages** — flag a page so only designated **managers** can publish directly. Everyone else proposes changes as **drafts** edited in the *full* editor; a manager reviews the draft as a side-by-side diff and **publishes or rejects** it. Draft-authoring never touches the live page until published.
+- **Review / Approve** — per-revision sign-off by designated **approvers**, with a prominent **Approved** badge on the page once every current approver has approved the current revision (`review` mode gives the same flow with softer wording).
+- **Groups everywhere** — watchers, managers and approvers can be individual **users _or_ whole groups**, resolved to *live* membership at evaluation time (adding someone to an approver group immediately makes them a pending approver).
+- **Email notifications** for every step (watch digest, draft submitted/rejected, approval requested, changes requested), through the existing mail subsystem.
+
+### 🛠️ Administration & presentation
+
+- **Mail-failure alert** — admins get a dismissible banner (on every page) when notification email fails to send, so silent delivery problems don't go unnoticed.
+- **Private site** — hide the social share buttons in a page's share menu, leaving only **Copy URL** and **Email**.
+- **Hide "Powered by Wiki.js"** — remove the attribution from the footer and print output.
+- **Print QR code** — when printing a page, render a QR code (in the page-title header) that links back to the live page.
+- **Customizable load/save animation** — choose the spinner shown while pages load and save: **20 presets**, plus colour and speed, with a live preview.
+- **Git build info** — **Admin → System Info** shows the running branch / commit / date, so you always know exactly which build is deployed (works in dev, bare-metal, and Docker).
+
+### 📦 Distribution
+
+- A **self-contained release pipeline** ([`.github/workflows/release-fork.yml`](.github/workflows/release-fork.yml)) that builds and publishes a Docker image to this fork's GitHub Container Registry namespace and cuts a GitHub Release with a bare-metal tarball — versioned after the corresponding upstream release with a `_jp` suffix. Grab a build from the [Releases](../../releases) page.
+
+<!-- ===================== END FORK NOTICE ===================== -->
 
 - **[Official Website](https://js.wiki/)**
 - **[Documentation](https://docs.requarks.io/)**

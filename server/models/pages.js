@@ -2,6 +2,7 @@ const Model = require('objection').Model
 const _ = require('lodash')
 const JSBinType = require('js-binary').Type
 const pageHelper = require('../helpers/page')
+const workflowHelper = require('../helpers/workflow')
 const path = require('path')
 const fs = require('fs-extra')
 const yaml = require('js-yaml')
@@ -358,6 +359,9 @@ module.exports = class Page extends Model {
     // -> Get latest updatedAt
     page.updatedAt = await WIKI.models.pages.query().findById(page.id).select('updatedAt').then(r => r.updatedAt)
 
+    // -> Corporate workflow: watch + approval side-effects (best-effort)
+    await workflowHelper.onPagePublished({ page, previousContent: '', authorId: page.authorId })
+
     return page
   }
 
@@ -380,6 +384,21 @@ module.exports = class Page extends Model {
       path: ogPage.path
     })) {
       throw new WIKI.Error.PageUpdateForbidden()
+    }
+
+    // -> Managed page guard: only administrators (manage:pages / manage:system)
+    //    and this page's managers may publish directly. Everyone else must go
+    //    through the draft workflow (publishDraft sets isDraftPublish=true after
+    //    verifying the publisher is a manager). Enforced server-side.
+    if (ogPage.isManaged && !opts.isDraftPublish) {
+      const canManageGlobally = WIKI.auth.checkAccess(opts.user, ['manage:pages'], {
+        locale: ogPage.localeCode,
+        path: ogPage.path
+      })
+      const isPageManager = await WIKI.models.pageManagers.isManager(ogPage.id, opts.user.id)
+      if (!canManageGlobally && !isPageManager) {
+        throw new WIKI.Error.PageUpdateForbidden()
+      }
     }
 
     // -> Check for empty content
@@ -424,7 +443,9 @@ module.exports = class Page extends Model {
 
     // -> Update page
     await WIKI.models.pages.query().patch({
-      authorId: opts.user.id,
+      // authorId override lets a draft publish record the draft's submitter as
+      // the content author while the manager remains the acting (publishing) user.
+      authorId: _.get(opts, 'authorId') || opts.user.id,
       content: opts.content,
       description: opts.description,
       isPublished: opts.isPublished === true || opts.isPublished === 1,
@@ -484,6 +505,10 @@ module.exports = class Page extends Model {
 
     // -> Get latest updatedAt
     page.updatedAt = await WIKI.models.pages.query().findById(page.id).select('updatedAt').then(r => r.updatedAt)
+
+    // -> Corporate workflow: watch + approval side-effects (best-effort).
+    //    Fires once per publish, including publishes routed through a draft.
+    await workflowHelper.onPagePublished({ page, previousContent: ogPage.content, authorId: page.authorId })
 
     return page
   }
@@ -1000,6 +1025,9 @@ module.exports = class Page extends Model {
           'pages.authorId',
           'pages.creatorId',
           'pages.extra',
+          'pages.isManaged',
+          'pages.approvalMode',
+          'pages.watchNotifyDelayMins',
           {
             authorName: 'author.name',
             authorEmail: 'author.email',

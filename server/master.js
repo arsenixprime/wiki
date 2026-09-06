@@ -150,12 +150,18 @@ module.exports = async () => {
       theme: WIKI.config.theming.theme,
       darkMode: WIKI.config.theming.darkMode,
       tocPosition: WIKI.config.theming.tocPosition || 'left',
+      loadingAnimation: _.get(WIKI.config, 'theming.loadingAnimation', 'atom'),
+      loadingColor: _.get(WIKI.config, 'theming.loadingColor', '#1976d2'),
+      loadingSpeed: _.get(WIKI.config, 'theming.loadingSpeed', 1000),
       lang: WIKI.config.lang.code,
       rtl: WIKI.config.lang.rtl,
       company: WIKI.config.company,
       contentLicense: WIKI.config.contentLicense,
       footerOverride: WIKI.config.footerOverride,
-      logoUrl: WIKI.config.logoUrl
+      logoUrl: WIKI.config.logoUrl,
+      privateSite: _.get(WIKI.config, 'features.featurePrivateSite', false),
+      hidePoweredBy: _.get(WIKI.config, 'features.featureHidePoweredBy', false),
+      printQRCode: _.get(WIKI.config, 'features.featurePrintQRCode', false)
     }
     res.locals.langs = await WIKI.models.locales.getNavLocales({ cache: true })
     res.locals.analyticsCode = await WIKI.models.analytics.getCode({ cache: true })

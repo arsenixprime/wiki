@@ -65,6 +65,49 @@
                     persistent-hint
                     hint='Select whether the table of contents is shown on the left, right or not at all.'
                     )
+
+              v-card.mt-3.animated.fadeInUp.wait-p2s
+                v-toolbar(color='primary', dark, dense, flat)
+                  v-toolbar-title.subtitle-1 Loading &amp; Saving Animation
+                v-card-text
+                  v-select(
+                    :items='spinnerOptions'
+                    outlined
+                    prepend-icon='mdi-animation-play'
+                    v-model='config.loadingAnimation'
+                    label='Animation style'
+                    persistent-hint
+                    hint='Shown while pages load and save.'
+                    )
+                  v-row.mt-2(no-gutters)
+                    v-col.pr-2(cols=6)
+                      v-text-field(
+                        outlined
+                        v-model='config.loadingColor'
+                        label='Color'
+                        prepend-icon='mdi-palette'
+                        hide-details
+                        )
+                        template(v-slot:append)
+                          v-menu(v-model='loadingColorMenu', top, nudge-bottom='8', :close-on-content-click='false')
+                            template(v-slot:activator='{ on }')
+                              .loading-color-swatch(v-on='on', :style='{ backgroundColor: config.loadingColor }')
+                            v-color-picker(v-model='config.loadingColor', mode='hexa', flat)
+                    v-col.pl-2(cols=6)
+                      v-text-field(
+                        outlined
+                        type='number'
+                        min='200'
+                        step='100'
+                        v-model.number='config.loadingSpeed'
+                        label='Speed'
+                        suffix='ms'
+                        prepend-icon='mdi-speedometer'
+                        hide-details
+                        )
+                  .overline.mt-5.mb-1.grey--text Preview
+                  .loading-preview.radius-7.text-center.pa-6
+                    component(:is='previewSpinner', :key='previewKey', :size='60', :animation-duration='config.loadingSpeed || 1000', :color='config.loadingColor || `#1976d2`')
             v-flex(lg6 xs12)
               //- v-card.animated.fadeInUp.wait-p2s
               //-   v-toolbar(color='teal', dark, dense, flat)
@@ -131,6 +174,7 @@
 <script>
 import _ from 'lodash'
 import { sync } from 'vuex-pathify'
+import { spinnerOptions, resolveSpinner } from '../common/spinners'
 
 import themeConfigQuery from 'gql/admin/theme/theme-query-config.gql'
 import themeSaveMutation from 'gql/admin/theme/theme-mutation-save.gql'
@@ -152,15 +196,27 @@ export default {
         darkMode: false,
         iconset: '',
         tocPosition: 'left',
+        loadingAnimation: 'atom',
+        loadingColor: '#1976d2',
+        loadingSpeed: 1000,
         injectCSS: '',
         injectHead: '',
         injectBody: ''
       },
+      spinnerOptions,
+      loadingColorMenu: false,
       darkModeInitial: false
     }
   },
   computed: {
     darkMode: sync('site/dark'),
+    previewSpinner () {
+      return resolveSpinner(this.config.loadingAnimation)
+    },
+    previewKey () {
+      // force a clean remount so the preview animation restarts on any change
+      return `${this.config.loadingAnimation}|${this.config.loadingColor}|${this.config.loadingSpeed}`
+    },
     headers() {
       return [
         {
@@ -214,6 +270,9 @@ export default {
             iconset: this.config.iconset,
             darkMode: this.darkMode,
             tocPosition: this.config.tocPosition,
+            loadingAnimation: this.config.loadingAnimation,
+            loadingColor: this.config.loadingColor,
+            loadingSpeed: this.config.loadingSpeed,
             injectCSS: this.config.injectCSS,
             injectHead: this.config.injectHead,
             injectBody: this.config.injectBody
@@ -256,5 +315,23 @@ export default {
   font-size: 13px;
   font-weight: 600;
   line-height: 1.4;
+}
+.loading-color-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, .2);
+  cursor: pointer;
+}
+.loading-preview {
+  background-color: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 110px;
+
+  .theme--dark & {
+    background-color: rgba(255, 255, 255, .04);
+  }
 }
 </style>

@@ -5,6 +5,9 @@ query {
       iconset
       darkMode
       tocPosition
+      loadingAnimation
+      loadingColor
+      loadingSpeed
       injectCSS
       injectHead
       injectBody

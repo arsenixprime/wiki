@@ -162,6 +162,32 @@
                     hint='Allow users to leave comments on pages.'
                     )
 
+                  v-divider.mt-3
+                  v-switch.mt-3(
+                    inset
+                    label='Private site'
+                    color='indigo'
+                    v-model='config.featurePrivateSite'
+                    persistent-hint
+                    hint='Hide social share buttons (Facebook, Twitter, etc.). Only Copy URL and Email remain in the share menu.'
+                    )
+                  v-switch.mt-4(
+                    inset
+                    label='Hide "Powered by Wiki.js"'
+                    color='indigo'
+                    v-model='config.featureHidePoweredBy'
+                    persistent-hint
+                    hint='Remove the "Powered by Wiki.js" attribution from the footer and print view.'
+                    )
+                  v-switch.mt-4(
+                    inset
+                    label='Print QR code'
+                    color='indigo'
+                    v-model='config.featurePrintQRCode'
+                    persistent-hint
+                    hint='When printing a page, show a QR code that links back to it.'
+                    )
+
                   //- v-divider.mt-3
                   //- v-switch(
                   //-   inset
@@ -295,6 +321,9 @@ export default {
         featurePageRatings: false,
         featurePageComments: false,
         featurePersonalWikis: false,
+        featurePrivateSite: false,
+        featureHidePoweredBy: false,
+        featurePrintQRCode: false,
         featureTinyPNG: false,
         pageExtensions: '',
         editFab: false,
@@ -363,6 +392,9 @@ export default {
               $featurePageRatings: Boolean
               $featurePageComments: Boolean
               $featurePersonalWikis: Boolean
+              $featurePrivateSite: Boolean
+              $featureHidePoweredBy: Boolean
+              $featurePrintQRCode: Boolean
               $editFab: Boolean
               $editMenuBar: Boolean
               $editMenuBtn: Boolean
@@ -387,6 +419,9 @@ export default {
                   featurePageRatings: $featurePageRatings
                   featurePageComments: $featurePageComments
                   featurePersonalWikis: $featurePersonalWikis
+                  featurePrivateSite: $featurePrivateSite
+                  featureHidePoweredBy: $featureHidePoweredBy
+                  featurePrintQRCode: $featurePrintQRCode
                   editFab: $editFab
                   editMenuBar: $editMenuBar
                   editMenuBtn: $editMenuBtn
@@ -420,6 +455,9 @@ export default {
             featurePageRatings: _.get(this.config, 'featurePageRatings', false),
             featurePageComments: _.get(this.config, 'featurePageComments', false),
             featurePersonalWikis: _.get(this.config, 'featurePersonalWikis', false),
+            featurePrivateSite: _.get(this.config, 'featurePrivateSite', false),
+            featureHidePoweredBy: _.get(this.config, 'featureHidePoweredBy', false),
+            featurePrintQRCode: _.get(this.config, 'featurePrintQRCode', false),
             editFab: _.get(this.config, 'editFab', false),
             editMenuBar: _.get(this.config, 'editMenuBar', false),
             editMenuBtn: _.get(this.config, 'editMenuBtn', false),
@@ -482,6 +520,9 @@ export default {
               featurePageRatings
               featurePageComments
               featurePersonalWikis
+              featurePrivateSite
+              featureHidePoweredBy
+              featurePrintQRCode
               editFab
               editMenuBar
               editMenuBtn

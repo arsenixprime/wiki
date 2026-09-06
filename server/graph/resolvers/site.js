@@ -103,7 +103,10 @@ module.exports = {
         WIKI.config.features = {
           featurePageRatings: _.get(args, 'featurePageRatings', WIKI.config.features.featurePageRatings),
           featurePageComments: _.get(args, 'featurePageComments', WIKI.config.features.featurePageComments),
-          featurePersonalWikis: _.get(args, 'featurePersonalWikis', WIKI.config.features.featurePersonalWikis)
+          featurePersonalWikis: _.get(args, 'featurePersonalWikis', WIKI.config.features.featurePersonalWikis),
+          featurePrivateSite: _.get(args, 'featurePrivateSite', WIKI.config.features.featurePrivateSite),
+          featureHidePoweredBy: _.get(args, 'featureHidePoweredBy', WIKI.config.features.featureHidePoweredBy),
+          featurePrintQRCode: _.get(args, 'featurePrintQRCode', WIKI.config.features.featurePrintQRCode)
         }
 
         WIKI.config.security = {

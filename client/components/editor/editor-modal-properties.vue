@@ -23,6 +23,7 @@
         v-tab(:disabled='!hasScriptPermission') {{$t('editor:props.scripts')}}
         //- v-tab(disabled) {{$t('editor:props.social')}}
         v-tab(:disabled='!hasStylePermission') {{$t('editor:props.styles')}}
+        v-tab {{$t('editor:props.workflow')}}
         v-tab-item(transition='fade-transition', reverse-transition='fade-transition')
           v-card-text.pt-5
             .overline.pb-5 {{$t('editor:props.pageInfo')}}
@@ -241,6 +242,32 @@
           .editor-props-codeeditor-hint
             .caption {{$t('editor:props.cssHint')}}
 
+        v-tab-item(transition='fade-transition', reverse-transition='fade-transition')
+          v-card-text.pt-5(v-if='!canWorkflow')
+            v-alert(outlined, type='info', prominent)
+              .body-2 {{$t('editor:props.workflowUnavailable')}}
+          template(v-else)
+            v-card-text.pt-5
+              .overline.pb-3 {{$t('editor:props.managedPage')}}
+              v-switch(v-model='wfManaged', :label='$t(`editor:props.managedToggle`)', color='primary', inset, hide-details, @change='saveManaged')
+              .caption.grey--text.mt-2 {{$t('editor:props.managedHint')}}
+              template(v-if='wfManaged')
+                user-group-picker.mt-4(v-model='wfManagers', :label='$t(`editor:props.managers`)')
+                v-btn.mt-2(small, color='primary', outlined, @click='saveManagers', :loading='wfSaving') {{$t('editor:props.saveList')}}
+            v-divider
+            v-card-text.grey.pt-5(:class='$vuetify.theme.dark ? `darken-3-d3` : `lighten-5`')
+              .overline.pb-3 {{$t('editor:props.reviewApprove')}}
+              v-select(v-model='wfApprovalMode', :items='approvalModeItems', :label='$t(`editor:props.approvalMode`)', outlined, dense, hide-details, style='max-width:360px;', @change='saveApprovalMode')
+              template(v-if='wfApprovalMode !== `off`')
+                user-group-picker.mt-4(v-model='wfApprovers', :label='$t(`editor:props.approvers`)')
+                v-btn.mt-2(small, color='primary', outlined, @click='saveApprovers', :loading='wfSaving') {{$t('editor:props.saveList')}}
+            v-divider
+            v-card-text.pt-5
+              .overline.pb-3 {{$t('editor:props.watchers')}}
+              user-group-picker(v-model='wfWatchers', :label='$t(`editor:props.watchers`)')
+              v-btn.mt-2(small, color='primary', outlined, @click='saveWatchers', :loading='wfSaving') {{$t('editor:props.saveList')}}
+              v-text-field.mt-5(v-model.number='wfDelay', type='number', :label='$t(`editor:props.watchDelay`)', :hint='$t(`editor:props.watchDelayHint`, { def: wfDefaultDelay })', persistent-hint, outlined, dense, clearable, style='max-width:360px;', @change='saveDelay')
+
     page-selector(:mode='pageSelectorMode', v-model='pageSelectorShown', :path='path', :locale='locale', :open-handler='setPath')
 </template>
 
@@ -254,10 +281,13 @@ import 'codemirror/lib/codemirror.css'
 import 'codemirror/mode/htmlmixed/htmlmixed.js'
 import 'codemirror/mode/css/css.js'
 
+import UserGroupPicker from '../common/user-group-picker.vue'
+
 /* global siteLangs, siteConfig */
 const filenamePattern = /^(?![\#\/\.\$\^\=\*\;\:\&\?\(\)\[\]\{\}\"\'\>\<\,\@\!\%\`\~\s])(?!.*[\#\/\.\$\^\=\*\;\:\&\?\(\)\[\]\{\}\"\'\>\<\,\@\!\%\`\~\s]$)[^\#\.\$\^\=\*\;\:\&\?\(\)\[\]\{\}\"\'\>\<\,\@\!\%\`\~\s]*$/
 
 export default {
+  components: { UserGroupPicker },
   props: {
     value: {
       type: Boolean,
@@ -275,6 +305,15 @@ export default {
       newTagSearch: '',
       currentTab: 0,
       cm: null,
+      wfLoaded: false,
+      wfSaving: false,
+      wfManaged: false,
+      wfApprovalMode: 'off',
+      wfDelay: null,
+      wfDefaultDelay: 30,
+      wfWatchers: [],
+      wfManagers: [],
+      wfApprovers: [],
       rules: {
         required: value => !!value || 'This field is required.',
         path: value => {
@@ -301,6 +340,19 @@ export default {
     scriptCss: sync('page/scriptCss'),
     hasScriptPermission: get('page/effectivePermissions@pages.script'),
     hasStylePermission: get('page/effectivePermissions@pages.style'),
+    pageId: get('page/id'),
+    hasManagePermission: get('page/effectivePermissions@pages.manage'),
+    hasAdminPermission: get('page/effectivePermissions@system.manage'),
+    canWorkflow () {
+      return this.pageId > 0 && (this.hasManagePermission || this.hasAdminPermission)
+    },
+    approvalModeItems () {
+      return [
+        { text: this.$t('editor:props.approvalOff'), value: 'off' },
+        { text: this.$t('editor:props.approvalReview'), value: 'review' },
+        { text: this.$t('editor:props.approvalApprove'), value: 'approve' }
+      ]
+    },
     pageSelectorMode () {
       return (this.mode === 'create') ? 'create' : 'move'
     }
@@ -340,6 +392,8 @@ export default {
             this.loadEditor(this.$refs.codecss, 'css')
           }, 100)
         })
+      } else if (newValue === 4 && this.canWorkflow && !this.wfLoaded) {
+        this.loadWorkflow()
       }
     }
   },
@@ -356,6 +410,73 @@ export default {
     setPath({ path, locale }) {
       this.locale = locale
       this.path = path
+    },
+    // -------- Corporate workflow tab --------
+    async loadWorkflow () {
+      try {
+        const resp = await this.$apollo.query({
+          query: gql`
+            query ($id: Int!) {
+              pages {
+                workflowState(pageId: $id) { isManaged approvalMode watchNotifyDelayMins effectiveDelayMins }
+                watchers(pageId: $id) { id kind userId groupId name }
+                managers(pageId: $id) { id kind userId groupId name }
+                approvers(pageId: $id) { id kind userId groupId name }
+              }
+            }
+          `,
+          variables: { id: this.pageId },
+          fetchPolicy: 'network-only'
+        })
+        const p = resp.data.pages
+        this.wfManaged = _.get(p, 'workflowState.isManaged', false)
+        this.wfApprovalMode = _.get(p, 'workflowState.approvalMode', 'off')
+        this.wfDelay = _.get(p, 'workflowState.watchNotifyDelayMins', null)
+        this.wfDefaultDelay = _.get(p, 'workflowState.effectiveDelayMins', 30)
+        this.wfWatchers = _.cloneDeep(p.watchers || [])
+        this.wfManagers = _.cloneDeep(p.managers || [])
+        this.wfApprovers = _.cloneDeep(p.approvers || [])
+        this.wfLoaded = true
+      } catch (err) {
+        this.wfNotify(err.message, 'red')
+      }
+    },
+    subjectsToInput (subjects) {
+      return subjects.map(s => ({ userId: s.userId || null, groupId: s.groupId || null }))
+    },
+    async wfMutate (mutation, variables, path) {
+      this.wfSaving = true
+      try {
+        const resp = await this.$apollo.mutate({ mutation, variables })
+        const rr = _.get(resp, `data.${path}.responseResult`, { succeeded: true })
+        if (!rr.succeeded) { throw new Error(rr.message) }
+        this.wfNotify(rr.message || this.$t('common:workflow.done'), 'success')
+      } catch (err) {
+        this.wfNotify(err.message, 'red')
+      }
+      this.wfSaving = false
+    },
+    wfNotify (message, style) {
+      this.$store.commit('showNotification', { style, message, icon: style === 'red' ? 'alert' : 'check' })
+    },
+    saveManaged () {
+      return this.wfMutate(gql`mutation($id: Int!, $v: Boolean!) { pages { setManaged(pageId: $id, isManaged: $v) { responseResult { succeeded message } } } }`, { id: this.pageId, v: this.wfManaged }, 'pages.setManaged')
+    },
+    saveApprovalMode () {
+      return this.wfMutate(gql`mutation($id: Int!, $m: String!) { pages { setApprovalMode(pageId: $id, mode: $m) { responseResult { succeeded message } } } }`, { id: this.pageId, m: this.wfApprovalMode }, 'pages.setApprovalMode')
+    },
+    saveDelay () {
+      const delay = _.isFinite(this.wfDelay) ? this.wfDelay : null
+      return this.wfMutate(gql`mutation($id: Int!, $d: Int) { pages { setWatchDelay(pageId: $id, delayMins: $d) { responseResult { succeeded message } } } }`, { id: this.pageId, d: delay }, 'pages.setWatchDelay')
+    },
+    saveWatchers () {
+      return this.wfMutate(gql`mutation($id: Int!, $s: [PageSubjectInput!]!) { pages { setWatchers(pageId: $id, subjects: $s) { responseResult { succeeded message } } } }`, { id: this.pageId, s: this.subjectsToInput(this.wfWatchers) }, 'pages.setWatchers')
+    },
+    saveManagers () {
+      return this.wfMutate(gql`mutation($id: Int!, $s: [PageSubjectInput!]!) { pages { setManagers(pageId: $id, subjects: $s) { responseResult { succeeded message } } } }`, { id: this.pageId, s: this.subjectsToInput(this.wfManagers) }, 'pages.setManagers')
+    },
+    saveApprovers () {
+      return this.wfMutate(gql`mutation($id: Int!, $s: [PageSubjectInput!]!) { pages { setApprovers(pageId: $id, subjects: $s) { responseResult { succeeded message } } } }`, { id: this.pageId, s: this.subjectsToInput(this.wfApprovers) }, 'pages.setApprovers')
     },
     loadEditor(ref, mode) {
       this.cm = CodeMirror.fromTextArea(ref, {

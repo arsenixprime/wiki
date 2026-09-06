@@ -7,6 +7,9 @@ query {
       dbHost
       dbType
       dbVersion
+      gitBranch
+      gitCommit
+      gitCommitDate
       hostname
       latestVersion
       latestVersionReleaseDate

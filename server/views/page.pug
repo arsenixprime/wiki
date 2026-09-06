@@ -31,6 +31,7 @@ block body
       comments-external=comments.codeTemplate
       edit-shortcuts=Buffer.from(JSON.stringify(config.editShortcuts)).toString('base64')
       filename=pageFilename
+      qr-code=qrCode
       )
       template(slot='contents')
         div!= page.render

@@ -82,6 +82,8 @@
                 )
                 v-icon.mr-2(small) {{ editShortcutsObj.editMenuExternalIcon }}
                 span.text-none {{$t(`common:page.editExternal`, { name: editShortcutsObj.editMenuExternalName })}}
+            //- Print QR: sits in the page-title header (right side), print only.
+            .print-qr(v-if='qrCode', :class='{ "print-qr--visible": printView }', role='img', :aria-label='$t(`common:page.qrAlt`)', v-html='qrSvgHtml')
       v-divider
       v-container.pl-5.pt-4(fluid, grid-list-xl)
         v-layout(row)
@@ -220,6 +222,8 @@
                   span {{$t('common:page.printFormat')}}
                 v-spacer
 
+            page-workflow.mt-3(v-if='isAuthenticated && pageId > 0', :page-id='pageId', @approval='onWfApproval')
+
           v-flex.page-col-content(
             xs12
             :lg9='tocPosition !== `off`'
@@ -324,6 +328,10 @@
                         v-icon(size='20') mdi-trash-can-outline
                     span {{$t('common:header.delete')}}
               span {{$t('common:page.editPage')}}
+            v-alert.mb-5(v-if='wfApproval && wfApproval.mode === `approve` && wfApproval.isComplete', color='green', prominent, text, icon='mdi-check-decagram', dense)
+              .body-2.font-weight-medium {{$t('common:workflow.approvedBanner')}}
+            v-alert.mb-5(v-else-if='wfApproval && wfApproval.mode !== `off` && wfApproval.total > 0', color='orange', outlined, icon='mdi-progress-check', dense)
+              .caption {{$t('common:workflow.pendingBanner', { done: wfApproval.approvedCount, total: wfApproval.total })}}
             v-alert.mb-5(v-if='!isPublished', color='red', outlined, icon='mdi-minus-circle', dense)
               .caption {{$t('common:page.unpublishedWarning')}}
             .contents(ref='container')
@@ -491,6 +499,10 @@ export default {
     filename: {
       type: String,
       default: ''
+    },
+    qrCode: {
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -523,7 +535,8 @@ export default {
           }
         }
       },
-      winWidth: 0
+      winWidth: 0,
+      wfApproval: null
     }
   },
   computed: {
@@ -550,6 +563,14 @@ export default {
         }, []))
     },
     pageUrl () { return window.location.href },
+    qrSvgHtml () {
+      if (!this.qrCode) { return '' }
+      try {
+        return Buffer.from(this.qrCode, 'base64').toString('utf8')
+      } catch (err) {
+        return ''
+      }
+    },
     upBtnPosition () {
       if (this.$vuetify.breakpoint.mdAndUp) {
         return this.$vuetify.rtl ? `right: 235px;` : `left: 235px;`
@@ -706,6 +727,9 @@ export default {
         this.navShown = false
       }
     },
+    onWfApproval (status) {
+      this.wfApproval = status
+    },
     goToComments (focusNewComment = false) {
       this.$vuetify.goTo('#discussion', this.scrollOpts)
       if (focusNewComment) {
@@ -717,6 +741,37 @@ export default {
 </script>
 
 <style lang="scss">
+// Print QR: sits inside the page-title header, on the right, vertically centered
+// next to the page name. Print only (revealed by the printer button on-screen
+// and by @media print for any actual print). Inline <svg> DOM injected via
+// v-html — must NOT be floated (a float is silently dropped from the printed
+// output inside the theme's flex/print layout; verified by rendering to PDF).
+.is-page-header {
+  position: relative;
+}
+.print-qr {
+  display: none;
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  z-index: 10;
+
+  svg {
+    display: block;
+    width: 74px;
+    height: 74px;
+  }
+
+  &--visible {
+    display: block;
+  }
+}
+@media print {
+  .print-qr {
+    display: block !important;
+  }
+}
 
 .breadcrumbs-nav {
   .v-btn {

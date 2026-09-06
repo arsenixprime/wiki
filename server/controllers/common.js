@@ -548,6 +548,27 @@ router.get('/*', async (req, res, next) => {
           let pageFilename = WIKI.config.lang.namespacing ? `${pageArgs.locale}/${page.path}` : page.path
           pageFilename += page.contentType === 'markdown' ? '.md' : '.html'
 
+          // -> Print QR code — links to this page, shown in print view.
+          //    Passed as base64-encoded raw SVG *markup* (not a data URI). The
+          //    client inlines it as real <svg> DOM: a data-URI <img> renders on
+          //    screen but browsers routinely drop it from printed output, whereas
+          //    inline SVG is part of the document and prints reliably.
+          let qrCode = ''
+          if (_.get(WIKI.config, 'features.featurePrintQRCode', false)) {
+            try {
+              const qrImage = require('qr-image')
+              const pageUrl = `${WIKI.config.host}/${page.localeCode}/${page.path}`
+              // qr-image emits <svg viewBox=".."> with NO width/height. An inline
+              // SVG sized only by CSS (%/auto) renders on screen but collapses to
+              // zero height when printed, so inject explicit pixel dimensions.
+              const svg = qrImage.imageSync(pageUrl, { type: 'svg', margin: 1 })
+                .replace(/^<svg /, '<svg width="150" height="150" ')
+              qrCode = Buffer.from(svg).toString('base64')
+            } catch (err) {
+              WIKI.logger.warn(`Failed to generate print QR code: ${err.message}`)
+            }
+          }
+
           // -> Render view
           res.render('page', {
             page,
@@ -555,7 +576,8 @@ router.get('/*', async (req, res, next) => {
             injectCode,
             comments: commentTmpl,
             effectivePermissions,
-            pageFilename
+            pageFilename,
+            qrCode
           })
         }
       } else if (pageArgs.path === 'home') {

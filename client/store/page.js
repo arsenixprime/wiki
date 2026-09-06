@@ -18,6 +18,9 @@ const state = {
   mode: '',
   scriptJs: '',
   scriptCss: '',
+  isManaged: false,
+  approvalMode: 'off',
+  watchNotifyDelayMins: null,
   effectivePermissions: {
     comments: {
       read: false,
