@@ -14,7 +14,7 @@ This page is the rolling, user-facing guide: what each feature does, where to tu
 |---|---|---|
 | `v2.5.314_jp` | 2026-06-13 | Clipboard image paste and drag-and-drop in both editors |
 | `v2.5.314_jp2` | 2026-09-09 | Corporate workflow (Watch, Managed pages, Review/Approve, groups everywhere), mail-failure alert, Private site, Hide "Powered by Wiki.js", Print QR code, customizable load/save animation, Git build info |
-| *unreleased* (PR #2) | 2026-09-30 | Staged list editing in the Workflow tab (Apply changes / Discard); fix: saving more than one manager/approver/watcher failed on SQLite and MySQL |
+| *unreleased* (PR #2) | 2026-09-30 | Staged list editing in the Workflow tab (Apply changes / Discard); fix: saving more than one manager/approver/watcher failed on SQLite and MySQL; fix: Admin dashboard stayed blank / statistics never loaded on released builds because the `_jpN` version suffix crashed the version comparison |
 
 Versions follow the upstream Wiki.js release they are based on, with a `_jpN` suffix. Docker images: `ghcr.io/arsenixprime/wiki:<version>` (and `:latest`).
 

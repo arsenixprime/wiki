@@ -207,6 +207,17 @@ exposed to the client via `siteConfig`, and are edited through the standard
     Both were confirmed by rendering the running page to PDF with headless
     Chrome; that (not on-screen inspection) is the reliable way to debug print.
 
+### Fork version strings and `semver`
+
+Releases are versioned `<upstream>_jpN` (e.g. `2.5.314_jp2`), which is **not
+valid semver**. Anything that feeds the running version into the `semver`
+library must go through `client/helpers/version.js` (`baseVersion` /
+`isVersionCurrent`), which compares on the upstream base and never throws. The
+admin dashboard originally called `semver.lte` directly: on released builds the
+comparison threw inside the render function, so the dashboard went blank when
+navigated to and its statistics never filled in on a fresh load. The update-check
+job likewise sends the base version to the upstream endpoint.
+
 ### Git build info (Admin → System Info)
 
 A **Git Build** row in Admin → System Info shows the running build's branch,

@@ -25,7 +25,9 @@ module.exports = async () => {
       }`,
       variables: {
         channel: WIKI.config.channel,
-        version: WIKI.version
+        // Send the upstream base version: this fork's `_jpN` suffix is not
+        // valid semver and the update endpoint would reject it.
+        version: String(WIKI.version).split('_')[0]
       }
     })
     const info = _.get(resp, 'data.releases.checkForUpdates', false)

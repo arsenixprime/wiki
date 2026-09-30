@@ -141,6 +141,7 @@
 import _ from 'lodash'
 
 import { SelfBuildingSquareSpinner } from 'epic-spinners'
+import { isVersionCurrent } from '../../helpers/version'
 
 import systemInfoQuery from 'gql/admin/system/system-query-info.gql'
 import performUpgradeMutation from 'gql/admin/system/system-mutation-upgrade.gql'
@@ -189,7 +190,8 @@ export default {
       return this.info.dbType === 'MySQL' && this.dbVersion.indexOf('5.') === 0
     },
     isLatestVersion () {
-      return this.info.currentVersion === this.info.latestVersion
+      // Compare on the upstream base so `2.5.314_jp2` counts as current for 2.5.314.
+      return isVersionCurrent(this.info.latestVersion, this.info.currentVersion)
     }
   },
   methods: {
