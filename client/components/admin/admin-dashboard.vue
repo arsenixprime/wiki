@@ -110,7 +110,7 @@ import _ from 'lodash'
 import AnimatedNumber from 'animated-number-vue'
 import { get } from 'vuex-pathify'
 import gql from 'graphql-tag'
-import semverLte from 'semver/functions/lte'
+import { isVersionCurrent } from '../../helpers/version'
 
 export default {
   components: {
@@ -135,11 +135,8 @@ export default {
   },
   computed: {
     isLatestVersion() {
-      if (this.info.latestVersion === 'n/a' || this.info.currentVersion === 'n/a') {
-        return true
-      } else {
-        return semverLte(this.info.latestVersion, this.info.currentVersion)
-      }
+      // Tolerates this fork's `_jpN` version suffix (see helpers/version.js).
+      return isVersionCurrent(this.info.latestVersion, this.info.currentVersion)
     },
     info: get('admin/info'),
     permissions: get('user/permissions')

@@ -59,6 +59,10 @@ common:
     addUser: 'Add user'
     addGroup: 'Add group'
     allGroupsAdded: 'All groups added'
+    pendingNew: 'new'
+    pendingRemoved: 'removing'
+    undoRemove: 'Undo remove'
+    pendingSummary: '{{added}} to add, {{removed}} to remove — not yet applied.'
 
 editor:
   props:
@@ -77,7 +81,8 @@ editor:
     watchers: 'Watchers (users or groups)'
     watchDelay: 'Notification delay (minutes)'
     watchDelayHint: 'Leave empty to use the site default ({{def}} min). Changes are batched for this long before watchers are emailed.'
-    saveList: 'Save list'
+    applyChanges: 'Apply changes'
+    discardChanges: 'Discard'
   managed:
     banner: 'This page is managed — your changes are saved as a draft for a manager to review and publish.'
     draftBanner: 'You are editing a draft. Save keeps working on the draft; use Submit for review to send it to a manager.'

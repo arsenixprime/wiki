@@ -252,20 +252,26 @@
               v-switch(v-model='wfManaged', :label='$t(`editor:props.managedToggle`)', color='primary', inset, hide-details, @change='saveManaged')
               .caption.grey--text.mt-2 {{$t('editor:props.managedHint')}}
               template(v-if='wfManaged')
-                user-group-picker.mt-4(v-model='wfManagers', :label='$t(`editor:props.managers`)')
-                v-btn.mt-2(small, color='primary', outlined, @click='saveManagers', :loading='wfSaving') {{$t('editor:props.saveList')}}
+                user-group-picker.mt-4(v-model='wfManagers', :baseline='wfManagersBase', :label='$t(`editor:props.managers`)')
+                .mt-2
+                  v-btn(small, color='primary', outlined, @click='saveManagers', :loading='wfSaving', :disabled='!managersDirty') {{$t('editor:props.applyChanges')}}
+                  v-btn.ml-2(v-if='managersDirty', small, text, color='grey darken-1', @click='wfDiscard(`managers`)') {{$t('editor:props.discardChanges')}}
             v-divider
             v-card-text.grey.pt-5(:class='$vuetify.theme.dark ? `darken-3-d3` : `lighten-5`')
               .overline.pb-3 {{$t('editor:props.reviewApprove')}}
               v-select(v-model='wfApprovalMode', :items='approvalModeItems', :label='$t(`editor:props.approvalMode`)', outlined, dense, hide-details, style='max-width:360px;', @change='saveApprovalMode')
               template(v-if='wfApprovalMode !== `off`')
-                user-group-picker.mt-4(v-model='wfApprovers', :label='$t(`editor:props.approvers`)')
-                v-btn.mt-2(small, color='primary', outlined, @click='saveApprovers', :loading='wfSaving') {{$t('editor:props.saveList')}}
+                user-group-picker.mt-4(v-model='wfApprovers', :baseline='wfApproversBase', :label='$t(`editor:props.approvers`)')
+                .mt-2
+                  v-btn(small, color='primary', outlined, @click='saveApprovers', :loading='wfSaving', :disabled='!approversDirty') {{$t('editor:props.applyChanges')}}
+                  v-btn.ml-2(v-if='approversDirty', small, text, color='grey darken-1', @click='wfDiscard(`approvers`)') {{$t('editor:props.discardChanges')}}
             v-divider
             v-card-text.pt-5
               .overline.pb-3 {{$t('editor:props.watchers')}}
-              user-group-picker(v-model='wfWatchers', :label='$t(`editor:props.watchers`)')
-              v-btn.mt-2(small, color='primary', outlined, @click='saveWatchers', :loading='wfSaving') {{$t('editor:props.saveList')}}
+              user-group-picker(v-model='wfWatchers', :baseline='wfWatchersBase', :label='$t(`editor:props.watchers`)')
+              .mt-2
+                v-btn(small, color='primary', outlined, @click='saveWatchers', :loading='wfSaving', :disabled='!watchersDirty') {{$t('editor:props.applyChanges')}}
+                v-btn.ml-2(v-if='watchersDirty', small, text, color='grey darken-1', @click='wfDiscard(`watchers`)') {{$t('editor:props.discardChanges')}}
               v-text-field.mt-5(v-model.number='wfDelay', type='number', :label='$t(`editor:props.watchDelay`)', :hint='$t(`editor:props.watchDelayHint`, { def: wfDefaultDelay })', persistent-hint, outlined, dense, clearable, style='max-width:360px;', @change='saveDelay')
 
     page-selector(:mode='pageSelectorMode', v-model='pageSelectorShown', :path='path', :locale='locale', :open-handler='setPath')
@@ -281,7 +287,7 @@ import 'codemirror/lib/codemirror.css'
 import 'codemirror/mode/htmlmixed/htmlmixed.js'
 import 'codemirror/mode/css/css.js'
 
-import UserGroupPicker from '../common/user-group-picker.vue'
+import UserGroupPicker, { diffSubjects } from '../common/user-group-picker.vue'
 
 /* global siteLangs, siteConfig */
 const filenamePattern = /^(?![\#\/\.\$\^\=\*\;\:\&\?\(\)\[\]\{\}\"\'\>\<\,\@\!\%\`\~\s])(?!.*[\#\/\.\$\^\=\*\;\:\&\?\(\)\[\]\{\}\"\'\>\<\,\@\!\%\`\~\s]$)[^\#\.\$\^\=\*\;\:\&\?\(\)\[\]\{\}\"\'\>\<\,\@\!\%\`\~\s]*$/
@@ -314,6 +320,10 @@ export default {
       wfWatchers: [],
       wfManagers: [],
       wfApprovers: [],
+      // Last-saved snapshots; the picker renders pending adds/removes against these.
+      wfWatchersBase: [],
+      wfManagersBase: [],
+      wfApproversBase: [],
       rules: {
         required: value => !!value || 'This field is required.',
         path: value => {
@@ -346,6 +356,9 @@ export default {
     canWorkflow () {
       return this.pageId > 0 && (this.hasManagePermission || this.hasAdminPermission)
     },
+    watchersDirty () { return this.wfListDirty(this.wfWatchers, this.wfWatchersBase) },
+    managersDirty () { return this.wfListDirty(this.wfManagers, this.wfManagersBase) },
+    approversDirty () { return this.wfListDirty(this.wfApprovers, this.wfApproversBase) },
     approvalModeItems () {
       return [
         { text: this.$t('editor:props.approvalOff'), value: 'off' },
@@ -436,6 +449,9 @@ export default {
         this.wfWatchers = _.cloneDeep(p.watchers || [])
         this.wfManagers = _.cloneDeep(p.managers || [])
         this.wfApprovers = _.cloneDeep(p.approvers || [])
+        this.wfWatchersBase = _.cloneDeep(this.wfWatchers)
+        this.wfManagersBase = _.cloneDeep(this.wfManagers)
+        this.wfApproversBase = _.cloneDeep(this.wfApprovers)
         this.wfLoaded = true
       } catch (err) {
         this.wfNotify(err.message, 'red')
@@ -444,17 +460,43 @@ export default {
     subjectsToInput (subjects) {
       return subjects.map(s => ({ userId: s.userId || null, groupId: s.groupId || null }))
     },
+    /**
+     * Runs a workflow mutation. Resolves true on success, false on failure
+     * (the error is already surfaced as a notification).
+     */
     async wfMutate (mutation, variables, path) {
       this.wfSaving = true
+      let ok = false
       try {
         const resp = await this.$apollo.mutate({ mutation, variables })
         const rr = _.get(resp, `data.${path}.responseResult`, { succeeded: true })
         if (!rr.succeeded) { throw new Error(rr.message) }
         this.wfNotify(rr.message || this.$t('common:workflow.done'), 'success')
+        ok = true
       } catch (err) {
         this.wfNotify(err.message, 'red')
       }
       this.wfSaving = false
+      return ok
+    },
+    wfListDirty (pending, baseline) {
+      const d = diffSubjects(pending, baseline)
+      return d.added.length > 0 || d.removed.length > 0
+    },
+    /** Reset a pending list (watchers | managers | approvers) back to its saved baseline. */
+    wfDiscard (list) {
+      const key = `wf${_.upperFirst(list)}`
+      this[key] = _.cloneDeep(this[`${key}Base`])
+    },
+    /** Persist a subject list and, on success, promote it to the new baseline. */
+    async wfSaveList (list, mutation, path) {
+      const key = `wf${_.upperFirst(list)}`
+      const pending = _.cloneDeep(this[key])
+      const ok = await this.wfMutate(mutation, { id: this.pageId, s: this.subjectsToInput(pending) }, path)
+      if (ok) {
+        this[`${key}Base`] = pending
+      }
+      return ok
     },
     wfNotify (message, style) {
       this.$store.commit('showNotification', { style, message, icon: style === 'red' ? 'alert' : 'check' })
@@ -470,13 +512,13 @@ export default {
       return this.wfMutate(gql`mutation($id: Int!, $d: Int) { pages { setWatchDelay(pageId: $id, delayMins: $d) { responseResult { succeeded message } } } }`, { id: this.pageId, d: delay }, 'pages.setWatchDelay')
     },
     saveWatchers () {
-      return this.wfMutate(gql`mutation($id: Int!, $s: [PageSubjectInput!]!) { pages { setWatchers(pageId: $id, subjects: $s) { responseResult { succeeded message } } } }`, { id: this.pageId, s: this.subjectsToInput(this.wfWatchers) }, 'pages.setWatchers')
+      return this.wfSaveList('watchers', gql`mutation($id: Int!, $s: [PageSubjectInput!]!) { pages { setWatchers(pageId: $id, subjects: $s) { responseResult { succeeded message } } } }`, 'pages.setWatchers')
     },
     saveManagers () {
-      return this.wfMutate(gql`mutation($id: Int!, $s: [PageSubjectInput!]!) { pages { setManagers(pageId: $id, subjects: $s) { responseResult { succeeded message } } } }`, { id: this.pageId, s: this.subjectsToInput(this.wfManagers) }, 'pages.setManagers')
+      return this.wfSaveList('managers', gql`mutation($id: Int!, $s: [PageSubjectInput!]!) { pages { setManagers(pageId: $id, subjects: $s) { responseResult { succeeded message } } } }`, 'pages.setManagers')
     },
     saveApprovers () {
-      return this.wfMutate(gql`mutation($id: Int!, $s: [PageSubjectInput!]!) { pages { setApprovers(pageId: $id, subjects: $s) { responseResult { succeeded message } } } }`, { id: this.pageId, s: this.subjectsToInput(this.wfApprovers) }, 'pages.setApprovers')
+      return this.wfSaveList('approvers', gql`mutation($id: Int!, $s: [PageSubjectInput!]!) { pages { setApprovers(pageId: $id, subjects: $s) { responseResult { succeeded message } } } }`, 'pages.setApprovers')
     },
     loadEditor(ref, mode) {
       this.cm = CodeMirror.fromTextArea(ref, {

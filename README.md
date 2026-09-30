@@ -27,7 +27,7 @@
      ======================================================================== -->
 
 > [!IMPORTANT]
-> **This repository is an opinionated fork of [Wiki.js](https://github.com/requarks/wiki) 2.x**, tuned for **controlled, corporate documentation**. It tracks upstream Wiki.js and layers the additions below on top. Every addition is **opt-in through the normal admin UI** — stock Wiki.js behaviour is unchanged unless you turn it on. The features are outlined below; see [`dev/docs/corporate-workflow.md`](dev/docs/corporate-workflow.md) for the technical deep dive.
+> **This repository is an opinionated fork of [Wiki.js](https://github.com/requarks/wiki) 2.x**, tuned for **controlled, corporate documentation**. It tracks upstream Wiki.js and layers the additions below on top. Every addition is **opt-in through the normal admin UI** — stock Wiki.js behaviour is unchanged unless you turn it on. The features are outlined below; see [`dev/docs/fork-features.md`](dev/docs/fork-features.md) for the user/admin guide (wiki-ready) and [`dev/docs/corporate-workflow.md`](dev/docs/corporate-workflow.md) for the technical deep dive.
 
 ## ✨ What this fork adds (vs. upstream Wiki.js)
 
@@ -43,6 +43,7 @@ A full review/approval pipeline that turns Wiki.js into a governed documentation
 - **Managed pages** — flag a page so only designated **managers** can publish directly. Everyone else proposes changes as **drafts** edited in the *full* editor; a manager reviews the draft as a side-by-side diff and **publishes or rejects** it. Draft-authoring never touches the live page until published.
 - **Review / Approve** — per-revision sign-off by designated **approvers**, with a prominent **Approved** badge on the page once every current approver has approved the current revision (`review` mode gives the same flow with softer wording).
 - **Groups everywhere** — watchers, managers and approvers can be individual **users _or_ whole groups**, resolved to *live* membership at evaluation time (adding someone to an approver group immediately makes them a pending approver).
+- **Explicit list editing** — in the editor's Page Properties → Workflow tab, list edits are staged: new entries are marked **new**, removed entries stay visible struck-through with an undo, and an **Apply changes** button (disabled until something changed) commits the list; **Discard** reverts it.
 - **Email notifications** for every step (watch digest, draft submitted/rejected, approval requested, changes requested), through the existing mail subsystem.
 
 ### 🛠️ Administration & presentation
