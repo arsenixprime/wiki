@@ -1,4 +1,8 @@
-# Corporate Documentation Workflow
+# Corporate Documentation Workflow — technical reference
+
+> This is the developer-facing reference (data model, GraphQL, code paths,
+> gotchas). The user/admin-facing guide to every fork feature, suitable for
+> publishing on the wiki itself, is [`fork-features.md`](fork-features.md).
 
 This fork adds four interrelated features that make Wiki.js usable as a
 controlled corporate documentation system:

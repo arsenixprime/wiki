@@ -27,7 +27,7 @@
      ======================================================================== -->
 
 > [!IMPORTANT]
-> **This repository is an opinionated fork of [Wiki.js](https://github.com/requarks/wiki) 2.x**, tuned for **controlled, corporate documentation**. It tracks upstream Wiki.js and layers the additions below on top. Every addition is **opt-in through the normal admin UI** — stock Wiki.js behaviour is unchanged unless you turn it on. The features are outlined below; see [`dev/docs/corporate-workflow.md`](dev/docs/corporate-workflow.md) for the technical deep dive.
+> **This repository is an opinionated fork of [Wiki.js](https://github.com/requarks/wiki) 2.x**, tuned for **controlled, corporate documentation**. It tracks upstream Wiki.js and layers the additions below on top. Every addition is **opt-in through the normal admin UI** — stock Wiki.js behaviour is unchanged unless you turn it on. The features are outlined below; see [`dev/docs/fork-features.md`](dev/docs/fork-features.md) for the user/admin guide (wiki-ready) and [`dev/docs/corporate-workflow.md`](dev/docs/corporate-workflow.md) for the technical deep dive.
 
 ## ✨ What this fork adds (vs. upstream Wiki.js)
 
