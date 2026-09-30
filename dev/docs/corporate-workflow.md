@@ -147,6 +147,35 @@ The digest email includes author, timestamp, a compact stats line
 - A user reachable via multiple paths is de-duplicated into a single email and a
   single approval slot.
 
+### Editing subject lists (Page Properties → Workflow tab)
+
+The managers / approvers / watchers lists in `editor-modal-properties.vue` are
+**staged, not live**. `user-group-picker.vue` takes a `baseline` prop (the
+last-saved list) alongside its `v-model` (the pending list) and renders each
+entry by diffing the two by `(kind, id)`:
+
+- in pending but not in baseline → green chip, `+` icon, **new** tag; its ✕
+  drops it outright;
+- in baseline but not in pending → greyed, struck-through chip with a
+  **removing** tag and an **undo** control that restores it;
+- in both → normal chip.
+
+Rows keep baseline order with additions appended, and a caption summarises
+"N to add, M to remove — not yet applied". Removing then re-adding the same
+entry yields no diff. The per-list **Apply changes** button is disabled until the
+list is dirty; on success the pending list is promoted to the new baseline (so
+chips render normally again), on failure the pending state is kept. **Discard**
+resets pending to baseline. The Managed toggle, Approval mode and Notification
+delay are single-value controls and still save immediately on change. Pending
+list edits survive closing/reopening the dialog within an editor session, but
+are lost on leaving the editor.
+
+**Server side**, `replaceSubjects` in `pageWorkflow.js` deletes and re-inserts
+the page's rows **one at a time inside a transaction**. An array insert only
+works on PostgreSQL / SQL Server; on SQLite and MySQL it threw *after* the
+delete had run, silently emptying the list whenever more than one subject was
+saved. Covered by a regression test in `resolver-enforcement.test.js`.
+
 ---
 
 ## Site presentation options
