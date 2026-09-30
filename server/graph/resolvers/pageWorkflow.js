@@ -29,15 +29,21 @@ async function canManagePage (user, page) {
 }
 
 // Replace the full subject set of a page for a given subject model.
+// Runs delete + inserts in one transaction so a failed insert can never leave
+// the page with an emptied list. Rows are inserted one at a time on purpose:
+// Objection's array insert is only supported on PostgreSQL / SQL Server, and
+// this fork must also work on SQLite and MySQL.
 async function replaceSubjects (model, pageId, inputSubjects) {
   const rows = (inputSubjects || []).map(s => {
     subjects.validateSubject(s)
     return { pageId, userId: _.isNil(s.userId) ? null : s.userId, groupId: _.isNil(s.groupId) ? null : s.groupId }
   })
-  await model.query().where('pageId', pageId).del()
-  if (rows.length > 0) {
-    await model.query().insert(rows)
-  }
+  await model.transaction(async trx => {
+    await model.query(trx).where('pageId', pageId).del()
+    for (const row of rows) {
+      await model.query(trx).insert(row)
+    }
+  })
 }
 
 // Resolve subject rows into display objects (user or group, with names).

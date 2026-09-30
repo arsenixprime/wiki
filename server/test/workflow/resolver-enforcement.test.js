@@ -47,6 +47,39 @@ describe('managed-page permission enforcement (server-side)', () => {
   })
 })
 
+describe('subject list replacement is portable and atomic', () => {
+  test('setWatchers inserts one row per subject inside a transaction (no array insert)', async () => {
+    // Regression: an array insert only works on PostgreSQL / SQL Server. On
+    // SQLite/MySQL it threw AFTER the delete, wiping the page's list.
+    const trx = { id: 'trx' }
+    const q = chain(null)
+    const pageWatchers = {
+      query: jest.fn(() => q),
+      transaction: jest.fn(fn => fn(trx))
+    }
+    global.WIKI = {
+      Error: fakeErrors(),
+      auth: { checkAccess: jest.fn(() => true) },
+      models: {
+        pages: { query: jest.fn(() => chain(page)) },
+        pageWatchers
+      }
+    }
+    const subjects = [{ userId: 5 }, { userId: 6 }, { groupId: 4 }]
+    const res = await resolver.PageMutation.setWatchers({}, { pageId: 1, subjects }, ctx)
+
+    expect(res.responseResult.succeeded).toBe(true)
+    expect(pageWatchers.transaction).toHaveBeenCalledTimes(1)
+    // every query in the replace ran on the transaction handle
+    pageWatchers.query.mock.calls.forEach(call => expect(call[0]).toBe(trx))
+    expect(q.del).toHaveBeenCalledTimes(1)
+    expect(q.insert).toHaveBeenCalledTimes(3)
+    q.insert.mock.calls.forEach(call => expect(Array.isArray(call[0])).toBe(false))
+    expect(q.insert).toHaveBeenCalledWith({ pageId: 1, userId: 5, groupId: null })
+    expect(q.insert).toHaveBeenCalledWith({ pageId: 1, userId: null, groupId: 4 })
+  })
+})
+
 describe('draft publish routes through the normal save pipeline', () => {
   test('publishDraft records the submitter as author and deletes the draft', async () => {
     const draft = { id: 3, pageId: 1, content: 'new', description: 'nd', title: 'nt', submittedBy: 7, updatedBy: 5, createdBy: 5 }
