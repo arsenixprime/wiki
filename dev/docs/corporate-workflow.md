@@ -78,6 +78,17 @@ The digest email includes author, timestamp, a compact stats line
 (`+42 / −7 lines across 3 sections`), a link to the page, and a link to the diff
 (`/h/<locale>/<path>?diff=<from>,<to>`, honored by the history view).
 
+**Stats are bounded on purpose.** The job runs in-process and
+`computeChangeStats` is synchronous. jsdiff's line diff is O((N+M)·D): on an
+8k-line page with every other line changed it ran for over four minutes on the
+main thread, and the server answered no HTTP requests until it finished (pages
+already open kept working; navigation and reloads hung). The exact diff is used
+only up to 1,500 combined lines; above that a linear line-multiset count gives
+added/removed totals and the digest says "(large page, approximate)". SMTP
+connect/greeting/socket timeouts are also bounded in `server/core/mail.js`
+(nodemailer's defaults are 2 and 10 minutes) so a publish that awaits approver
+emails cannot stall on an unreachable mail host.
+
 ---
 
 ## Feature 2 — Managed pages
