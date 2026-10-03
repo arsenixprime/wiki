@@ -61,6 +61,10 @@
             .page-header-headings
               .headline.grey--text(:class='$vuetify.theme.dark ? `text--lighten-2` : `text--darken-3`') {{title}}
               .caption.grey--text.text--darken-1 {{description}}
+              //- Print only: last editor + revision date under the title.
+              .print-meta.caption.grey--text.text--darken-2(:class='{ "print-meta--visible": printView }')
+                v-icon(x-small, color='grey darken-2').mr-1 mdi-account-edit
+                span {{$t('common:page.printMeta', { name: authorName, date: $options.filters.moment(updatedAt, 'LLL') })}}
             .page-edit-shortcuts(
               v-if='editShortcutsObj.editMenuBar'
               :class='tocPosition === `right` ? `is-right` : ``'
@@ -769,6 +773,21 @@ export default {
 }
 @media print {
   .print-qr {
+    display: block !important;
+  }
+}
+
+// Print-only "Last edited by X on <date>" line under the page title.
+.print-meta {
+  display: none;
+  margin-top: 4px;
+
+  &--visible {
+    display: block;
+  }
+}
+@media print {
+  .print-meta {
     display: block !important;
   }
 }
