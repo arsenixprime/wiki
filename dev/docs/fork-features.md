@@ -14,7 +14,8 @@ This page is the rolling, user-facing guide: what each feature does, where to tu
 |---|---|---|
 | `v2.5.314_jp` | 2026-06-13 | Clipboard image paste and drag-and-drop in both editors |
 | `v2.5.314_jp2` | 2026-09-09 | Corporate workflow (Watch, Managed pages, Review/Approve, groups everywhere), mail-failure alert, Private site, Hide "Powered by Wiki.js", Print QR code, customizable load/save animation, Git build info |
-| *unreleased* (PR #2) | 2026-09-30 | Staged list editing in the Workflow tab (Apply changes / Discard); fix: saving more than one manager/approver/watcher failed on SQLite and MySQL; fix: Admin dashboard stayed blank / statistics never loaded on released builds because the `_jpN` version suffix crashed the version comparison |
+| `v2.5.315_jp1` | 2026-10-03 | Includes upstream **2.5.315** (two security fixes: XSS through Vue directives in page content, and delegated user managers editing administrators); print view shows last editor and revision date under the title; fix: watch-digest job could freeze the whole server for minutes on large, heavily edited pages; SMTP timeouts bounded so an unreachable mail host can't stall a publish |
+| `v2.5.314_jp3` | 2026-09-30 | Staged list editing in the Workflow tab (Apply changes / Discard); fix: saving more than one manager/approver/watcher failed on SQLite and MySQL; fix: Admin dashboard stayed blank / statistics never loaded on released builds because the `_jpN` version suffix crashed the version comparison |
 
 Versions follow the upstream Wiki.js release they are based on, with a `_jpN` suffix. Docker images: `ghcr.io/arsenixprime/wiki:<version>` (and `:latest`).
 
@@ -115,6 +116,10 @@ Admin → General → **Private site**. Hides the social share targets (Facebook
 ### Hide "Powered by Wiki.js"
 
 Admin → General → **Hide "Powered by Wiki.js"**. Removes the attribution from the page footer, which also removes it from printed output.
+
+### Print header: last editor and revision date
+
+Always on. When a page is printed, a line under the title reads *Last edited by &lt;name&gt; on &lt;date&gt;*, taken from the page's current revision. It is hidden on screen (except in the print preview opened from the page's printer button).
 
 ### Print QR code
 
