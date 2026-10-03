@@ -16,7 +16,28 @@ describe('workflow change stats + wording', () => {
 
   test('computeChangeStats on identical content = no change', () => {
     const stats = workflow.computeChangeStats('same\ntext', 'same\ntext')
-    expect(stats).toEqual({ added: 0, removed: 0, sections: 0 })
+    expect(stats).toEqual({ added: 0, removed: 0, sections: 0, approximate: false })
+  })
+
+  test('computeChangeStats never stalls on a large, heavily changed page', () => {
+    // Regression: jsdiff on ~8k lines with every other line changed ran for
+    // minutes on the main thread, blocking every HTTP request meanwhile.
+    const oldLines = Array.from({ length: 8000 }, (_, i) => `line ${i} some content here`)
+    const newLines = oldLines.map((l, i) => (i % 2 ? `${l} changed` : l))
+    const t = Date.now()
+    const stats = workflow.computeChangeStats(oldLines.join('\n'), newLines.join('\n'))
+    expect(Date.now() - t).toBeLessThan(1000)
+    expect(stats.approximate).toBe(true)
+    expect(stats.added).toBe(4000)
+    expect(stats.removed).toBe(4000)
+    expect(workflow.statsLine(stats)).toBe('+4000 / −4000 lines (large page, approximate)')
+  })
+
+  test('computeChangeStats stays exact for normal-sized pages', () => {
+    const oldLines = Array.from({ length: 600 }, (_, i) => `line ${i}`)
+    const newLines = [...oldLines.slice(0, 100), 'inserted', ...oldLines.slice(100, 500), ...oldLines.slice(501)]
+    const stats = workflow.computeChangeStats(oldLines.join('\n'), newLines.join('\n'))
+    expect(stats).toEqual({ added: 1, removed: 1, sections: 2, approximate: false })
   })
 
   test('statsLine formats compactly', () => {

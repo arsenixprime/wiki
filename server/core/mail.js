@@ -39,6 +39,15 @@ module.exports = {
           }
         }
       }
+      // Bound every SMTP phase. Nodemailer's defaults (2 min to connect, 10 min
+      // socket) let an unreachable mail host stall any request that awaits a
+      // notification, e.g. publishing a page with approvers, for minutes.
+      conf = {
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 30000,
+        ...conf
+      }
       this.transport = nodemailer.createTransport(conf)
     } else {
       WIKI.logger.warn('Mail is not setup! Please set the configuration in the administration area!')

@@ -6,6 +6,12 @@ const subjects = require('./subjects')
 
 const DEFAULT_WATCH_DELAY_MINS = 30
 
+// Combined (old + new) line count above which computeChangeStats stops using
+// jsdiff. Measured worst case for jsdiff at ~6,000 combined lines was ~5s and
+// at 16,000 lines over 4 minutes, both on the main thread; 1,500 keeps the
+// worst case in the low hundreds of milliseconds.
+const EXACT_DIFF_MAX_LINES = 1500
+
 /**
  * Corporate documentation workflow orchestration.
  *
@@ -70,24 +76,53 @@ module.exports = {
 
   /**
    * Compute a compact change summary between two content strings.
-   * @returns {{added:number, removed:number, sections:number}}
+   *
+   * IMPORTANT: this runs synchronously on the main thread (the notification
+   * job is in-process). jsdiff's line diff is O((N+M)·D) and on a large page
+   * with many changed lines it can run for MINUTES, during which the server
+   * answers no HTTP requests at all. So the exact diff is only used when the
+   * combined line count is small enough that its worst case is well under a
+   * second; larger inputs get an O(N+M) line-multiset approximation, which
+   * yields exact added/removed counts for most edits and no section count.
+   *
+   * @returns {{added:number, removed:number, sections:number|null, approximate:boolean}}
    */
   computeChangeStats (oldContent, newContent) {
-    const parts = jsdiff.diffLines(oldContent || '', newContent || '')
-    let added = 0
-    let removed = 0
-    let sections = 0
-    for (const part of parts) {
-      if (!part.added && !part.removed) { continue }
-      const lines = part.count || (part.value ? part.value.split('\n').filter(l => l.length > 0).length : 0)
-      if (part.added) { added += lines }
-      if (part.removed) { removed += lines }
-      sections++
+    const oldLines = (oldContent || '').split('\n')
+    const newLines = (newContent || '').split('\n')
+    if (oldLines.length + newLines.length <= EXACT_DIFF_MAX_LINES) {
+      const parts = jsdiff.diffLines(oldContent || '', newContent || '')
+      let added = 0
+      let removed = 0
+      let sections = 0
+      for (const part of parts) {
+        if (!part.added && !part.removed) { continue }
+        const lines = part.count || (part.value ? part.value.split('\n').filter(l => l.length > 0).length : 0)
+        if (part.added) { added += lines }
+        if (part.removed) { removed += lines }
+        sections++
+      }
+      return { added, removed, sections, approximate: false }
     }
-    return { added, removed, sections }
+    // Large input: count lines present in one side but not the other (as a
+    // multiset), ignoring blank lines. Linear time, never blocks.
+    const counts = new Map()
+    for (const l of oldLines) { if (l.length > 0) { counts.set(l, (counts.get(l) || 0) + 1) } }
+    let added = 0
+    for (const l of newLines) {
+      if (l.length === 0) { continue }
+      const c = counts.get(l) || 0
+      if (c > 0) { counts.set(l, c - 1) } else { added++ }
+    }
+    let removed = 0
+    for (const c of counts.values()) { removed += c }
+    return { added, removed, sections: null, approximate: true }
   },
 
   statsLine (stats) {
+    if (stats.approximate || stats.sections === null || stats.sections === undefined) {
+      return `+${stats.added} / −${stats.removed} lines (large page, approximate)`
+    }
     return `+${stats.added} / −${stats.removed} lines across ${stats.sections} section${stats.sections === 1 ? '' : 's'}`
   },
 
