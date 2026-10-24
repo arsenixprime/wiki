@@ -815,6 +815,9 @@ export default {
   max-height: calc(100vh - 64px);
   overflow-y: auto;
   -ms-overflow-style: none;
+  // Leave room at the bottom so the last card (workflow / drafts) can scroll
+  // clear of the fixed edit FAB (56px button + 16px offset).
+  padding-bottom: 96px !important;
 }
 
 .page-col-sd::-webkit-scrollbar {
