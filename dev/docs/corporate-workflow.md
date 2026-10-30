@@ -120,6 +120,14 @@ emails cannot stall on an unreachable mail host.
 - The editor proactively routes managed-page non-managers into draft mode: a
   normal edit of a managed page transparently becomes a draft (banner +
   save-as-draft in `editor.vue`).
+- **Drafts-in-progress warning**: on mount for an existing page (not in
+  `?draft=` mode) `editor.vue` fetches `drafts(pageId)` alongside
+  `workflowState` and, if any exist, opens `editor-modal-drafts.vue` before the
+  user can type. The dialog offers per-draft **Review** (page `?wfdraft=<id>`,
+  which auto-opens the diff dialog) and **Edit draft** (`/e/...?draft=<id>`),
+  plus **Back to page** and **Edit live page anyway**. Navigation marks
+  `exitConfirmed` so the unsaved-changes prompt does not fire. Purely advisory:
+  nothing server-side changes.
 - **Draft-authoring access**: because drafts open the real editor (which requires
   `write:pages`), authoring a draft currently requires page-edit rights rather
   than read-only access. This narrows the "any reader can draft" intent; a

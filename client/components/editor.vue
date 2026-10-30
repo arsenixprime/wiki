@@ -54,6 +54,7 @@
       editor-modal-properties(v-model='dialogProps')
       editor-modal-editorselect(v-model='dialogEditorSelector')
       editor-modal-unsaved(v-model='dialogUnsaved', @discard='exitGo')
+      editor-modal-drafts(v-model='dialogDrafts', :drafts='wfDrafts', :locale='locale', :path='path', :can-manage='wfCanManage', @navigate='leaveTo')
       component(:is='activeModal')
 
     loader(v-model='dialogProgress', :title='$t(`editor:save.processing`)', :subtitle='$t(`editor:save.pleaseWait`)')
@@ -88,6 +89,7 @@ export default {
     editorModalEditorselect: () => import(/* webpackChunkName: "editor", webpackMode: "eager" */ './editor/editor-modal-editorselect.vue'),
     editorModalProperties: () => import(/* webpackChunkName: "editor", webpackMode: "eager" */ './editor/editor-modal-properties.vue'),
     editorModalUnsaved: () => import(/* webpackChunkName: "editor", webpackMode: "eager" */ './editor/editor-modal-unsaved.vue'),
+    editorModalDrafts: () => import(/* webpackChunkName: "editor", webpackMode: "eager" */ './editor/editor-modal-drafts.vue'),
     editorModalMedia: () => import(/* webpackChunkName: "editor", webpackMode: "eager" */ './editor/editor-modal-media.vue'),
     editorModalBlocks: () => import(/* webpackChunkName: "editor", webpackMode: "eager" */ './editor/editor-modal-blocks.vue'),
     editorModalConflict: () => import(/* webpackChunkName: "editor-conflict", webpackMode: "lazy" */ './editor/editor-modal-conflict.vue'),
@@ -167,11 +169,13 @@ export default {
       dialogProgress: false,
       dialogEditorSelector: false,
       dialogUnsaved: false,
+      dialogDrafts: false,
       exitConfirmed: false,
       initContentParsed: '',
       wfManaged: false,
       wfCanManage: false,
       wfDraftId: null,
+      wfDrafts: [],
       draftMode: false,
       savedState: {
         description: '',
@@ -303,13 +307,28 @@ export default {
     async loadWorkflowState () {
       try {
         const resp = await this.$apollo.query({
-          query: gql`query ($id: Int!) { pages { workflowState(pageId: $id) { isManaged canManage } } }`,
+          query: gql`query ($id: Int!) { pages { workflowState(pageId: $id) { isManaged canManage } drafts(pageId: $id) { id title status updatedByName updatedAt } } }`,
           variables: { id: this.pageId },
           fetchPolicy: 'network-only'
         })
         this.wfManaged = _.get(resp, 'data.pages.workflowState.isManaged', false)
         this.wfCanManage = _.get(resp, 'data.pages.workflowState.canManage', false)
+        this.wfDrafts = _.get(resp, 'data.pages.drafts', []) || []
+        // -> Drafts already in progress: warn before the user starts editing the
+        //    live page directly, so they can review / publish / continue a draft
+        //    instead of creating parallel changes. Not shown when editing a draft.
+        if (!this.draftMode && this.wfDrafts.length > 0) {
+          this.dialogDrafts = true
+        }
       } catch (err) { /* non-fatal */ }
+    },
+    // Leave the editor for another page without the unsaved-changes prompt
+    // (used by the drafts-in-progress dialog before any edit has been made).
+    leaveTo (url) {
+      this.dialogDrafts = false
+      this.exitConfirmed = true
+      this.$store.commit(`loadingStart`, 'editor-close')
+      window.location.assign(url)
     },
     // Load a draft's content/metadata into the editor store, then mount the
     // matching editor component (markdown/visual) so it renders the draft.

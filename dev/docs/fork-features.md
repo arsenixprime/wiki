@@ -14,6 +14,7 @@ This page is the rolling, user-facing guide: what each feature does, where to tu
 |---|---|---|
 | `v2.5.314_jp` | 2026-06-13 | Clipboard image paste and drag-and-drop in both editors |
 | `v2.5.314_jp2` | 2026-09-09 | Corporate workflow (Watch, Managed pages, Review/Approve, groups everywhere), mail-failure alert, Private site, Hide "Powered by Wiki.js", Print QR code, customizable load/save animation, Git build info |
+| `v2.5.315_jp3` | 2026-10-30 | Drafts-in-progress warning: opening the editor on a page that already has drafts shows a dialog listing them, with Review / Edit draft / Back to page / Edit live page anyway, so pending drafts can be merged before the live page is changed |
 | `v2.5.315_jp2` | 2026-10-24 | fix: the floating edit (pencil) button covered the draft actions at the bottom of the sidebar workflow card; the sidebar now scrolls far enough to clear it |
 | `v2.5.315_jp1` | 2026-10-03 | Includes upstream **2.5.315** (two security fixes: XSS through Vue directives in page content, and delegated user managers editing administrators); print view shows last editor and revision date under the title; fix: watch-digest job could freeze the whole server for minutes on large, heavily edited pages; SMTP timeouts bounded so an unreachable mail host can't stall a publish |
 | `v2.5.314_jp3` | 2026-09-30 | Staged list editing in the Workflow tab (Apply changes / Discard); fix: saving more than one manager/approver/watcher failed on SQLite and MySQL; fix: Admin dashboard stayed blank / statistics never loaded on released builds because the `_jpN` version suffix crashed the version comparison |
@@ -62,6 +63,7 @@ Notes:
 - Drafts are collaborative by design: any user who can author a draft on the page can edit or delete any draft on it.
 - Drafts never appear in search, navigation, the page tree or the sitemap.
 - Authoring a draft requires normal page-edit rights on the page.
+- **Drafts-in-progress warning**: opening the editor on a page that already has drafts shows a dialog listing them (title, status, last editor) before any edit is made. From it you can **Review** a draft (opens the side-by-side diff on the page, where a manager can publish it), **Edit draft** to continue it, go **Back to page**, or **Edit live page anyway**. This gives managers a chance to merge pending drafts before changing the live page underneath them. It applies to every way into the editor (pencil button, menu, keyboard shortcut, direct URL) and is not shown when you are already editing a draft.
 
 ### Review / Approve
 
